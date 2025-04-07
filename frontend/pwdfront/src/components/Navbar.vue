@@ -11,21 +11,43 @@
             aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
-        <input class="form-control form-control-dark w-100" type="text" name="search" id="search" placeholder="Search" aria-label="Search">
+        
+        
         <div class="navbar-nav">
             <div class="navbar-item text-nowrap">
-                <a class="nav-link px-3" @click="logout">Sign Out</a>
+                <button type="button" class="btn btn-text btn-sm" data-bs-toggle="modal" data-bs-target="#searchModal">
+                        Global Search
+                </button>
+                <a class="btn btn-text btn-sm" @click="logout">Sign Out</a>
             </div>
         </div>
     </header>
+
+    <!-- Search Modal -->
+    <div class="container">
+        <div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true" role="dialog">
+            <div class="modal-dialog modal-fullscreen">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title fs-5" id="exampleModalLabel">Global PWD Record Search</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <!-- Import Search Component -->
+                  <SearchPage />
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
 import { mapActions } from 'vuex';
-// import { toast } from "vue3-toastify";
-// import "vue3-toastify/dist/index.css";
+import SearchPage from '@/components/Search.vue';
 
 export default {
+    components: SearchPage,
     name: "NavBar",
     methods: {
         ...mapActions(["logout"]),

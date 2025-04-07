@@ -22,7 +22,7 @@ from django.conf.urls.static import static
 from django.views.static import serve
 from rest_framework.routers import DefaultRouter
 from users.views import UserViewset, verify_mfa
-from pwd_records.views import DisabilityTypeViewSet, ServiceTypeViewSet, PWDRecordViewSet, CertificateViewSet, MedicalRecordsViewSet, SupportServicesViewSet, ComplaintsViewSet
+from pwd_records.views import DisabilityTypeViewSet, ServiceTypeViewSet, ServiceTypeSearchView, PWDRecordViewSet, PWDSearchView, CertificateViewSet, MedicalRecordsViewSet, SupportServicesViewSet, ComplaintsViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 router = DefaultRouter()
@@ -40,7 +40,8 @@ urlpatterns = [
     path('api/', include(router.urls)),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    # path('api/login/', LoginView.as_view(), name='login_device_token'),
+    path('api/pwd/search/', PWDSearchView.as_view(), name='pwd-search'),
+    path('api/service/search/', ServiceTypeSearchView.as_view(), name='service-search'),
     path('api/verify-mfa/', verify_mfa, name='verify-mfa'),
     re_path(r'^media/(?P<path>.*)$', serve,
         {'document_root': settings.MEDIA_ROOT}),

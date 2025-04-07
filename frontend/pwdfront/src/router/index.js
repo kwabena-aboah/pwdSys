@@ -17,7 +17,7 @@ const routes = [
     },
     {
         path: '/records',
-        name: 'PWDRecordPage',
+        name: 'PWDRecordList',
         component: () => import('../views/PWDRecordList.vue'),
         meta: { requiresAuth: true },
     },

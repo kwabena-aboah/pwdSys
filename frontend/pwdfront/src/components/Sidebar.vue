@@ -8,7 +8,7 @@
                             <router-link to="/dashboard" class="nav-link">Dashboard</router-link>
                         </li>
                         <li class="nav-item">
-                            <router-link to="/records" class="nav-link">PWD Data</router-link>
+                            <router-link to="/records" class="nav-link">PWD Records</router-link>
                         </li>
                         <li class="nav-item">
                             <router-link to="/medical_records" class="nav-link">Medical Records</router-link>

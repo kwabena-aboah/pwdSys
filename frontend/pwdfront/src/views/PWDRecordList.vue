@@ -17,7 +17,7 @@
 
              <!-- Search filter -->
              <div class="mb-3">
-                 <input type="text" name="search" class="form-control" v-model="searchQuery" placeholder="Search name or contact number..." @input="fetchRecords(1)">
+                 <input type="text" name="search" class="form-control" v-model="searchQuery" placeholder="Search name or contact number..." @input="this.fetchRecords(1)">
              </div>
 
              <!-- Add PWDRecord Modal -->
@@ -49,16 +49,37 @@
                                 </div>
                                 <div class="mb-3">
                                   <label for="disability_type" class="form-label">Disability Type</label>
-                                  <select name="disability_type" id="disability_type" class="form-select" v-model="form.disability_type" required>
+                                  <div class="autocomplete-container" @keydown.down.prevent="moveDown" @keydown.up.prevent="moveUp" @keydown.enter.prevent="selectActive">
+                                    <input
+                                      type="text"
+                                      v-model="form.disability_type"
+                                      @input="debouncedFetchSuggestions"
+                                      placeholder="Start typing a disability type..."
+                                      @focus="isFocused = true"
+                                      @blur="hideSuggestionsWithDelay"
+                                      autocomplete="off"
+                                      class="form-control"
+                                      />
+                                      <ul v-if="isFocused && suggestions.length && form.disability_type" class="ul">
+                                        <li
+                                          v-for="(dtype, index) in suggestions"
+                                          :key="dtype.id"
+                                          :class="{ active: index === activeIndex }"
+                                          @mousedown.prevent="selectDisability(dtype)">
+                                            {{ dtype.disability_type }}
+                                          </li>
+                                      </ul>
+                                  </div>
+                                  <!-- <select name="disability_type" id="disability_type" class="form-select" v-model="form.disability_type" required>
                                      <option value="" disabled>Select Disability Type</option>
                                      <option v-for="dtype in disability" :key="dtype.id" :value="dtype.id">
                                          {{ dtype.id }}. {{ dtype.disability_type }}
                                      </option>
                                  </select>
                                    <div class="container">
-                                    <p>Click on the "Next" option to select other disability type not listed.</p>
+                                    <p>Click on the "Next" option to select other disability type not listed.</p> -->
                                      <!-- Pagination controls -->
-                                     <nav aria-label="Page navigation">
+                                     <!-- <nav aria-label="Page navigation">
                                       <ul class="pagination justify-content-center">
                                           <li 
                                               class="page-item"
@@ -74,7 +95,7 @@
                                           </li>
                                       </ul>
                                      </nav>
-                                   </div>
+                                   </div> -->
                                 </div>
                                 <div class="mb-3">
                                   <label for="id_photo" class="form-label">Select Passport Picture</label>
@@ -186,6 +207,7 @@ export default {
         Navbar,
         Sidebar,
     },
+    name: 'PWDRecordList',
   data() {
     return {
       records: [],
@@ -202,9 +224,13 @@ export default {
           emergency_contact_name: "",
           emergency_phone: "",
           is_verified: false,
-          // user: ""
       },
+      suggestions: [],
       searchQuery: "",
+      activeIndex: -1,
+      // loading: false,
+      isFocused: false,
+      debouceTimeout: null,
       page: 1,
       modalTitle: '',
       modalAction: '',
@@ -212,47 +238,19 @@ export default {
           next: null,
           prev: null,
       },
-      paginate: {
-          next: null,
-          prev: null,
-      },
-    }
+    };
   },
   created() {
     this.fetchRecords();
-    this.fetchDisabilityType()
+    this.fetchDisabilityType();
   },
   methods: {
-    async fetchDisabilityType(urls = `/disability_type/` ) {
-        try {
-            const response = await instance.get(urls, {
-                headers: {
-                'Authorization': `Bearer ${this.$store.state.accessToken}`,
-              }
-            });
-            this.disability = response.data.results;
-            this.paginate.next = response.data.next;
-            this.paginate.prev = response.data.previous;
-            console.log(response.data);
-        } catch (error) {
-            toast.error("Error fetching Disability Type!");
-            console.error("Error fetching Disability Type:", error);
-        }
-    },
-    changeList(urls) {
-        if (urls) {
-            this.fetchDisabilityType(urls);
-        }
-    },
-    async fetchRecords(url = `/pwd_records/`) {
+    async fetchRecords(url = `/pwd_records/?q=${this.searchQuery}&page=${this.page}`) {
       try {
+        // this.loading = true;
         const response = await instance.get(url, {
             headers: {
             'Authorization': `Bearer ${this.$store.state.accessToken}`,
-          },
-          params: {
-            q: this.searchQuery,
-            page: this.page
           }
         });
         this.records = response.data.results;
@@ -263,13 +261,70 @@ export default {
           toast.error("Error fetching records!");
           console.error("Error fetching records:", error);
           // this.records = [];
-      }
+      } 
+      // finally {
+      //   this.loading = false;
+      // }
     },
     changePage(url) {
         if (url) {
             this.fetchRecords(url);
         }
     },
+    async fetchDisabilityType() {
+       if(this.form.disability_type.length < 2) {
+        this.suggestions = []
+        this.activeIndex = -1
+        return
+       }
+       await instance.get('/disability_type/', {
+            headers: {
+            'Authorization': `Bearer ${this.$store.state.accessToken}`,
+          },
+          params: {
+            q: this.form.disability_type,
+          }
+        })
+       .then((response) => {
+        this.suggestions = response.data
+        this.activeIndex = -1
+       })
+       .catch((error) => {
+        toast.error("Error fetching disability type!");
+        console.error(error)
+       })
+      },
+      debouncedFetchSuggestions() {
+        clearTimeout(this.debouceTimeout)
+        this.debouceTimeout = setTimeout(() => {
+          this.fetchDisabilityType()
+        }, 300)
+      },
+      selectDisability(dtype) {
+        this.form.disability_type = dtype.disability_type
+        this.suggestions = []
+        this.activeIndex = -1
+      },
+      moveDown() {
+        if(this.activeIndex < this.suggestions.length - 1) {
+          this.activeIndex++
+        }
+      },
+      moveUp() {
+        if(this.activeIndex > 0) {
+          this.activeIndex--
+        }
+      },
+      selectActive() {
+        if(this.activeIndex >= 0) {
+          this.selectDisability(this.suggestions[this.activeIndex])
+        }
+      },
+      hideSuggestionsWithDelay() {
+        setTimeout(() => {
+          this.isFocused = false
+        }, 100)
+      },
     openModal(action, record = null) {
       if (action === 'create') {
           this.modalTitle = 'Add PWD Record';
@@ -377,6 +432,35 @@ export default {
       const modal = Modal.getInstance(document.getElementById('PWDModal'));
       modal.hide();
   },
-  },
+},
 }
 </script>
+<style scoped>
+  /*.autocomplete-container {
+    position: relative;
+    width: 100px;
+  }*/
+  .ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    border: 1px solid #ccc;
+    max-height: 150px;
+    overflow-y: auto;
+    position: absolute;
+    width: 100%;
+    z-index: 1000;
+  }
+  .ul li {
+    padding: 8px;
+    cursor: pointer;
+  }
+  .ul li.active {
+    background-color: #007BFF;
+    color: white;
+  }
+  .ul li.hover {
+    background-color: #f0f0f0;
+  }
+</style>

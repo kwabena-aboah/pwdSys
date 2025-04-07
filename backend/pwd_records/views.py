@@ -14,6 +14,7 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import BasePermission, AllowAny, IsAuthenticated, IsAdminUser, SAFE_METHODS
 
@@ -33,6 +34,10 @@ class DisabilityTypeViewSet(viewsets.ModelViewSet):
         serializer = DisabilityTypeSerializer(paginated_queryset, many=True)
         return paginator.get_paginated_response(serializer.data)
 
+    def get_queryset(self):
+        query = self.request.query_params.get('q', '')
+        return DisabilityType.objects.filter(disability_type__icontains=query)[:10]
+
 class ServiceTypeViewSet(viewsets.ModelViewSet):
     queryset = ServiceType.objects.all()
     serializer_class = ServiceTypeSerializer
@@ -43,6 +48,18 @@ class ServiceTypeViewSet(viewsets.ModelViewSet):
         paginated_queryset = paginator.paginate_queryset(self.queryset, request)
         serializer = ServiceTypeSerializer(paginated_queryset, many=True)
         return paginator.get_paginated_response(serializer.data)
+
+class ServiceTypeSearchView(ListAPIView):
+    serializer_class = ServiceTypeSerializer
+    pagination_class = ModelPagination
+
+    def get_queryset(self):
+        query = self.request.query_params.get('q', '')
+        if query:
+            return ServiceType.objects.filter(
+                Q(service_name__icontains=query)
+            )
+        return ServiceType.objects.none()
 
 class PWDRecordViewSet(viewsets.ModelViewSet):
     queryset = PWDRecord.objects.all()
@@ -61,10 +78,10 @@ class PWDRecordViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
     def get(self, request, *args, **kwargs):
-        query = request.query_params.get('q', '').strip()
+        query = self.request.query_params.get('q', '').strip()
         pwd_record = self.get_queryset()
         if query:
-            pwd_record = pwd_record.filter(
+            return pwd_record.filter(
                 Q(full_name__icontains=query) | Q(contact_number__icontains=query)
             )
         if pwd_record.exists():
@@ -89,6 +106,20 @@ class PWDRecordViewSet(viewsets.ModelViewSet):
         self.perform_update(serializer)
 
         return Response(serializer.data)
+
+# PWD Search view
+class PWDSearchView(ListAPIView):
+    serializer_class = PWDRecordSerializer
+    pagination_class = ModelPagination
+
+    def get_queryset(self):
+        query = self.request.query_params.get('q', '')
+        if query:
+            return PWDRecord.objects.filter(
+                Q(full_name__icontains=query) |
+                Q(contact_number__icontains=query)
+            )
+        return PWDRecord.objects.none()
 
 class CertificateViewSet(viewsets.ModelViewSet):
     queryset = Certificate.objects.all()

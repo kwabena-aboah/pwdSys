@@ -9,6 +9,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import 'bootstrap';
 import Vue3Toastify from "vue3-toastify";
 import "vue3-toastify/dist/index.css";
+import SearchPage from '@/components/Search.vue';
 
 function scheduleTokenRefresh() {
     const tokenExpiry = store.getters.tokenExpiry;
@@ -39,4 +40,4 @@ function scheduleTokenRefresh() {
 
 scheduleTokenRefresh();
 
-createApp(App).use(router).use(store, Vue3Toastify).mount('#app')
+createApp(App).use(router).use(store, Vue3Toastify).component('SearchPage', SearchPage).mount('#app')
