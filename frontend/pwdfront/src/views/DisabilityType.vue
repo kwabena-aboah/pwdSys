@@ -3,7 +3,12 @@
         <Navbar />
         <Sidebar />
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-            <h2 class="text-center">Disability Type</h2>
+            <nav aria-label="breadcrumb" class="container-fluid">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><RouterLink to="/disability-type">Disability Type</RouterLink></li>
+                    <li class="breadcrumb-item active" aria-current="page">Overview</li>
+                </ol>
+            </nav>
 
             <!-- Floating button -->
              <button 
@@ -43,34 +48,36 @@
              </div>
 
             <!-- Disability Type list -->
-              <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Disability Type</th>
-                        <th>Description</th>
-                        <th>Created Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody v-if="this.disabilityType?.length > 0">
-                    <tr v-for="dtype in disabilityType" :key="dtype.id">
-                        <td>{{ dtype.id }}</td>
-                        <td>{{ dtype.disability_type }}</td>
-                        <td>{{ dtype.description }}</td>
-                        <td>{{ dtype.created_on }}</td>
-                        <td>
-                            <button class="btn btn-sm btn-warning me-2" @click="openModal('edit', dtype)">Edit</button>
-                            <button class="btn btn-sm btn-danger" @click="deleteDisabilityType(dtype.id)">Delete</button>
-                        </td>
-                    </tr>
-                </tbody>
-                <tbody v-else>
-                    <tr>
-                        <td colspan="5">Loading...</td>
-                    </tr>
-                </tbody>
-              </table>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Disability Type</th>
+                            <th>Description</th>
+                            <th>Created Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody v-if="this.disabilityType?.length > 0">
+                        <tr v-for="dtype in disabilityType" :key="dtype.id">
+                            <td>{{ dtype.id }}</td>
+                            <td>{{ dtype.disability_type }}</td>
+                            <td>{{ dtype.description }}</td>
+                            <td>{{ dtype.created_on }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-warning me-2" @click="openModal('edit', dtype)">Edit</button>
+                                <button class="btn btn-sm btn-danger" @click="deleteDisabilityType(dtype.id)">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody v-else>
+                        <tr>
+                            <td colspan="5">Loading...</td>
+                        </tr>
+                    </tbody>
+                  </table>
+            </div>
 
               <!-- Pagination controls -->
                <nav aria-label="Page navigation">

@@ -4,7 +4,12 @@
         <Sidebar />
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <div class="container-fluid">
-              <h2 class="text-center">PWD Records</h2>
+              <nav aria-label="breadcrumb" class="container-fluid">
+                  <ol class="breadcrumb">
+                      <li class="breadcrumb-item"><RouterLink to="/records">PWD Records</RouterLink></li>
+                      <li class="breadcrumb-item active" aria-current="page">Overview</li>
+                  </ol>
+              </nav>
 
               <!-- Floating button -->
              <button 
@@ -14,11 +19,6 @@
                 >
                 <i class="bi bi-plus-lg"></i>
             </button>
-
-             <!-- Search filter -->
-             <div class="mb-3">
-                 <input type="text" name="search" class="form-control" v-model="searchQuery" placeholder="Search name or contact number..." @input="this.fetchRecords(1)">
-             </div>
 
              <!-- Add PWDRecord Modal -->
              <div class="modal fade" id="PWDModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="PWDModalLabel">
@@ -66,36 +66,11 @@
                                           :key="dtype.id"
                                           :class="{ active: index === activeIndex }"
                                           @mousedown.prevent="selectDisability(dtype)">
-                                            {{ dtype.disability_type }}
+                                            {{ dtype.id }}. {{ dtype.disability_type }}
                                           </li>
                                       </ul>
+                                      <p v-if="selectedDisability">Selected: {{ selectedDisability.disability_type }}</p>
                                   </div>
-                                  <!-- <select name="disability_type" id="disability_type" class="form-select" v-model="form.disability_type" required>
-                                     <option value="" disabled>Select Disability Type</option>
-                                     <option v-for="dtype in disability" :key="dtype.id" :value="dtype.id">
-                                         {{ dtype.id }}. {{ dtype.disability_type }}
-                                     </option>
-                                 </select>
-                                   <div class="container">
-                                    <p>Click on the "Next" option to select other disability type not listed.</p> -->
-                                     <!-- Pagination controls -->
-                                     <!-- <nav aria-label="Page navigation">
-                                      <ul class="pagination justify-content-center">
-                                          <li 
-                                              class="page-item"
-                                              :class="{ disabled: !paginate.prev }"
-                                              @click="changeList(paginate.prev)">
-                                              <a href="#" class="page-link">Previous</a>
-                                          </li>
-                                          <li 
-                                              class="page-item"
-                                              :class="{ disabled: !paginate.next }"
-                                              @click="changeList(paginate.next)">
-                                              <a href="#" class="page-link">Next</a>
-                                          </li>
-                                      </ul>
-                                     </nav>
-                                   </div> -->
                                 </div>
                                 <div class="mb-3">
                                   <label for="id_photo" class="form-label">Select Passport Picture</label>
@@ -138,37 +113,44 @@
                 </div>
              </div>
 
+             <!-- Search filter -->
+             <div class="mb-3">
+                 <input type="text" name="search" class="form-control" v-model="searchQuery" placeholder="Search name or contact number..." @input="this.fetchRecords(1)">
+             </div>
+             
              <!-- PWDRecords list -->
-              <table class="table table-striped">
-                <thead>
-                  <tr>
-                    <th>Full Name</th>
-                    <th>Disability Type</th>
-                    <th>Gender</th>
-                    <th>Verified?</th>
-                    <th>Registration Date</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody v-if="this.records?.length > 0">
-                  <tr v-for="record in records" :key="record.id">
-                    <td>{{ record.full_name }}</td>
-                    <td>{{ record.disability_name }}</td>
-                    <td>{{ record.gender }}</td>
-                    <td>{{ record.is_verified }}</td>
-                    <td>{{ record.registration_date }}</td>
-                    <td>
-                      <button class="btn btn-sm btn-warning me-2" @click="openModal('edit', record)">Edit</button>
-                      <button class="btn btn-sm btn-danger" @click="deleteRecord(record.id)">Delete</button>
-                  </td>
-                  </tr>
-                </tbody>
-                <tbody v-else>
+             <div class="table-responsive">
+               <table class="table table-striped">
+                  <thead>
                     <tr>
-                        <td colspan="7">Loading...</td>
+                      <th>Full Name</th>
+                      <th>Disability Type</th>
+                      <th>Gender</th>
+                      <th>Verified?</th>
+                      <th>Registration Date</th>
+                      <th>Actions</th>
                     </tr>
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody v-if="this.records?.length > 0">
+                    <tr v-for="record in records" :key="record.id">
+                      <td>{{ record.full_name }}</td>
+                      <td>{{ record.disability_name }}</td>
+                      <td>{{ record.gender }}</td>
+                      <td>{{ record.is_verified }}</td>
+                      <td>{{ record.registration_date }}</td>
+                      <td>
+                        <button class="btn btn-sm btn-warning me-2" @click="openModal('edit', record)">Edit</button>
+                        <button class="btn btn-sm btn-danger" @click="deleteRecord(record.id)">Delete</button>
+                    </td>
+                    </tr>
+                  </tbody>
+                  <tbody v-else>
+                      <tr>
+                          <td colspan="7">Loading...</td>
+                      </tr>
+                  </tbody>
+                </table>
+             </div>
 
               <!-- Pagination controls -->
                <nav aria-label="Page navigation">
@@ -211,14 +193,13 @@ export default {
   data() {
     return {
       records: [],
-      disability: [],
       form: {
           id: null,
           full_name: "",
           date_of_birth: "",
           gender: "",
           disability_type: "",
-          id_photo: "", // Store vase64 or file object
+          id_photo: "", // Store base64 or file object
           address: "",
           contact_number: "",
           emergency_contact_name: "",
@@ -228,8 +209,8 @@ export default {
       suggestions: [],
       searchQuery: "",
       activeIndex: -1,
-      // loading: false,
       isFocused: false,
+      selectedDisability: null,
       debouceTimeout: null,
       page: 1,
       modalTitle: '',
@@ -258,13 +239,13 @@ export default {
         this.pagination.prev = response.data.previous;
         console.log(response.data);
       } catch (error) {
-          toast.error("Error fetching records!");
-          console.error("Error fetching records:", error);
-          // this.records = [];
+        const status = error.response?.status;
+        const message = error.response?.data || error.message;
+
+        toast.error(`Error fetching records ${status ? ' (${status})' : ''}!`);
+        console.error("Error fetching records:", message);
+        // this.records = [];
       } 
-      // finally {
-      //   this.loading = false;
-      // }
     },
     changePage(url) {
         if (url) {
@@ -286,8 +267,8 @@ export default {
           }
         })
        .then((response) => {
-        this.suggestions = response.data
-        this.activeIndex = -1
+        this.suggestions = response.data.results;
+        this.activeIndex = -1;
        })
        .catch((error) => {
         toast.error("Error fetching disability type!");
@@ -302,6 +283,7 @@ export default {
       },
       selectDisability(dtype) {
         this.form.disability_type = dtype.disability_type
+        this.selectedDisability = dtype
         this.suggestions = []
         this.activeIndex = -1
       },
@@ -369,7 +351,7 @@ export default {
         formData.append('full_name', this.form.full_name);
         formData.append('date_of_birth', this.form.date_of_birth);
         formData.append('gender', this.form.gender);
-        formData.append('disability_type', this.form.disability_type);
+        formData.append('disability_type', this.form.disability_type ? this.selectedDisability.id : "");
         formData.append('address', this.form.address);
         formData.append('contact_number', this.form.contact_number);
         formData.append('emergency_contact_name', this.form.emergency_contact_name);
@@ -380,6 +362,11 @@ export default {
         // Append the image file if selected
         if (this.form.id_photo instanceof File) {
           formData.append('id_photo', this.form.id_photo);
+        }
+
+        if (!this.selectedDisability) {
+          toast.warn('Please select a disability type from suggestion')
+          return
         }
 
         const response = await instance.post("/pwd_records/", formData, {
@@ -399,8 +386,30 @@ export default {
   },
   async updateRecord() {
       try {
+        let formData = new FormData();
+        // Append form fields
+        formData.append('full_name', this.form.full_name);
+        formData.append('date_of_birth', this.form.date_of_birth);
+        formData.append('gender', this.form.gender);
+        formData.append('disability_type', this.form.disability_type ? this.selectedDisability.id : "");
+        formData.append('address', this.form.address);
+        formData.append('contact_number', this.form.contact_number);
+        formData.append('emergency_contact_name', this.form.emergency_contact_name);
+        formData.append('emergency_phone', this.form.emergency_phone);
+        formData.append('is_verified', this.form.is_verified);
+        // formData.append('user', this.$store.state.user.id);
 
-        const response = await instance.put(`/pwd_records/${this.form.id}/`, this.form, {
+        // Append the image file if selected
+        if (this.form.id_photo instanceof File) {
+          formData.append('id_photo', this.form.id_photo);
+        }
+
+        if (!this.selectedDisability) {
+          toast.warn('Please select a disability type from suggestion')
+          return
+        }
+
+        const response = await instance.put(`/pwd_records/${this.form.id}/`, formData, {
             headers: {
             'Authorization': `Bearer ${this.$store.state.accessToken}`,
             'Content-Type': 'multipart/form-data',

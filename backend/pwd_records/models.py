@@ -1,6 +1,8 @@
+import os, random
 from django.db import models
 from auditlog.registry import auditlog
 from users.models import User
+from django.utils import timezone
 
 def filename_ext(filepath):
     file_base = os.path.basename(filepath)
@@ -39,7 +41,7 @@ class DisabilityType(models.Model):
 	created_on = models.DateField(auto_now_add=True)
 
 	def __str__(self):
-		return f"{self.name} - {self.description}"
+		return f"{self.disability_type} - {self.description}"
 
 class ServiceType(models.Model):
 	service_name = models.CharField(max_length=255)

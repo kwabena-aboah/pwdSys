@@ -14,7 +14,13 @@
                             <router-link to="/medical_records" class="nav-link">Medical Records</router-link>
                         </li>
                         <li class="nav-item">
-                            <router-link to="/dashboard" class="nav-link">Beneficial Support</router-link>
+                          <router-link to="/certificates" class="nav-link">Medical Certificates</router-link>
+                        </li>
+                        <li class="nav-item">
+                            <router-link to="/beneficiary-support" class="nav-link">Beneficial Support</router-link>
+                        </li>
+                        <li class="nav-item">
+                          <router-link to="/complaints" class="nav-link">Complaints</router-link>
                         </li>
                     </ul>
 

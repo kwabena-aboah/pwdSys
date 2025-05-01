@@ -4,11 +4,11 @@
         <Sidebar />
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <nav aria-label="breadcrumb" class="container-fluid">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><RouterLink to="/medical_records">Medical Records</RouterLink></li>
-                        <li class="breadcrumb-item active" aria-current="page">Overview</li>
-                    </ol>
-                </nav>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><RouterLink to="/complaints">Complaints</RouterLink></li>
+                    <li class="breadcrumb-item active" aria-current="page">Overview</li>
+                </ol>
+            </nav>
 
             <!-- Floating button -->
              <button 
@@ -19,12 +19,12 @@
                 <i class="bi bi-plus-lg"></i>
             </button>
 
-            <!-- Add Service Type Modal -->
-             <div class="modal fade" id="medicalRecordsModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="medicalRecordsModalLabel">
+            <!-- Add Complaints Modal -->
+             <div class="modal fade" id="complaintsModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="complaintsModalLabel">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title fs-5" id="medicalRecordsModalLabel">{{ modalTitle }}</h5>
+                            <h5 class="modal-title fs-5" id="complaintsModalLabel">{{ modalTitle }}</h5>
                             <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <form @submit.prevent="handleSubmit">
@@ -55,20 +55,25 @@
                                   </div>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="diagnosis" class="form-label">Diagnosis</label>
-                                    <textarea name="diagnosis" id="diagnosis" rows="3" v-model="form.diagnosis" class="form-control" required></textarea>
+                                    <label for="location" class="form-label">Location</label>
+                                    <input type="text" name="location" v-model="form.location" id="location" class="form-control" placeholder="Enter location...">
                                 </div>
                                 <div class="mb-3">
-                                    <label for="doctor_name" class="form-label">Doctor's Name</label>
-                                    <input type="text" name="doctor_name" id="doctor_name" placeholder="Doctor's Name..." v-model="form.doctor_name" class="form-control">
+                                    <label for="complaint_description" class="form-label">Complaint Description</label>
+                                    <textarea name="complaint_description" v-model="form.complaint_description" rows="3" id="complaint_description" class="form-control" placeholder="Enter complaint..."></textarea>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="hospital_name" class="form-label">Hospital Name</label>
-                                    <input type="text" name="hospital_name" id="hospital_name" placeholder="Hospital Name..." v-model="form.hospital_name" class="form-control">
+                                    <label for="status" class="form-label">Complaint Status</label>
+                                    <select class="form-select" v-model="form.status" required>
+                                        <option value="" disabled>Select status</option>
+                                        <option value="new">New</option>
+                                        <option value="under review">Under Review</option>
+                                        <option value="resolved">Resolved</option>
+                                    </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="last_checkup_date" class="form-label">Last Checkup Date</label>
-                                    <input type="date" name="last_checkup_date" id="last_checkup_date" v-model="form.last_checkup_date" class="form-control">
+                                    <label for="reported_at" class="form-label">Reported Date</label>
+                                    <input type="datetime-local" name="reported_at" v-model="form.reported_at" id="reported_at" class="form-control">
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -87,24 +92,24 @@
                         <tr>
                             <th>ID</th>
                             <th>PWD Name</th>
-                            <th>Diagnosis</th>
-                            <th>Doctor's Name</th>
-                            <th>Hospital Name</th>
-                            <th>Last Checkup Date</th>
+                            <th>Location</th>
+                            <th>Complaint Description</th>
+                            <th>Status</th>
+                            <th>Reported Date</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody v-if="this.medicalRecord?.length > 0">
-                        <tr v-for="mrecord in medicalRecord" :key="mrecord.id">
-                            <td>{{ mrecord.id }}</td>
-                            <td>{{ mrecord.pwd_name }}</td>
-                            <td>{{ mrecord.diagnosis }}</td>
-                            <td>{{ mrecord.doctor_name }}</td>
-                            <td>{{ mrecord.hospital_name }}</td>
-                            <td>{{ mrecord.last_checkup_date }}</td>
+                    <tbody v-if="this.complaints?.length > 0">
+                        <tr v-for="complaint in complaints" :key="complaint.id">
+                            <td>{{ complaint.id }}</td>
+                            <td>{{ complaint.pwd_name }}</td>
+                            <td>{{ complaint.location}}</td>
+                            <td>{{ complaint.complaint_description}}</td>
+                            <td>{{ complaint.status }}</td>
+                            <td>{{ complaint.reported_at }}</td>
                             <td>
-                                <button class="btn btn-sm btn-warning me-2" @click="openModal('edit', mrecord)">Edit</button>
-                                <button class="btn btn-sm btn-danger" @click="deleteMedicalRecord(mrecord.id)">Delete</button>
+                                <button class="btn btn-sm btn-warning me-2" @click="openModal('edit', complaint)">Edit</button>
+                                <button class="btn btn-sm btn-danger" @click="deleteComplaint(complaint.id)">Delete</button>
                             </td>
                         </tr>
                     </tbody>
@@ -150,18 +155,19 @@ export default {
         Navbar,
         Sidebar,
     },
-    name: "MedicalRecordPage",
+    name: "ComplaintPage",
     data() {
         return {
-            medicalRecord: [],
+            complaints: [],
             form: {
                 id: null,
                 pwd_id: "",
                 // pwd_name: "",
-                diagnosis: "",
-                doctor_name: "",
-                hospital_name: "",
-                last_checkup_date: ""
+                location: "",
+                complaint_description: "",
+                status: "",
+                reported_at: ""
+
             },
             page: 1,
             suggestions: [],
@@ -178,25 +184,25 @@ export default {
         };
     },
     methods: {
-        async fetchMedicalRecords(url = `/medical_records/?page=${this.page}`) {
+        async fetchComplaints(url = `/complaints/?page=${this.page}`) {
             try {
                 const response = await instance.get(url, {
                     headers: {
                     'Authorization': `Bearer ${this.$store.state.accessToken}`,
                 }
                 });
-                this.medicalRecord = response.data.results;
+                this.complaints = response.data.results;
                 this.pagination.next = response.data.next;
                 this.pagination.prev = response.data.previous;
                 console.log(response.data);
             } catch (error) {
-                toast.error("Error fetching Medical Records!");
-                console.error("Error fetching Medical Records:", error);
+                toast.error("Error fetching Complaints!");
+                console.error("Error fetching Complaints:", error);
             }
         },
         changePage(url) {
             if (url) {
-                this.fetchMedicalRecords(url);
+                this.fetchComplaints(url);
             }
         },
         async fetchRecords() {
@@ -254,105 +260,106 @@ export default {
               this.isFocused = false
             }, 100)
           },
-        openModal(action, mrecord = null) {
+        openModal(action, complaint = null) {
             if (action === 'create') {
-                this.modalTitle = 'Add Medical Record';
+                this.modalTitle = 'Add Complaint';
                 this.modalAction = 'Create';
-                this.form = { id: null, pwd_id: "", diagnosis: "", doctor_name: "", hospital_name: "", last_checkup_date: "" };
+                this.form = { id: null, pwd_id: "", location: "", complaint_description: "", status: "", reported_at: "" };
             } else if (action === 'edit') {
-                this.modalTitle = 'Edit Medical Record';
+                this.modalTitle = 'Edit Complaint';
                 this.modalAction = 'Update';
-                this.form = { ...mrecord };
+                this.form = { ...complaint };
             }
-            const modal = new Modal(document.getElementById('medicalRecordsModal'));
+            const modal = new Modal(document.getElementById('complaintsModal'));
             modal.show();
         },
         handleSubmit() {
             if (this.modalAction === 'Create') {
-                this.createMedicalRecord();
+                this.createComplaint();
             } else {
-                this.updateMedicalRecord();
+                this.updateComplaint();
             }
         },
-        async createMedicalRecord() {
+        async createComplaint() {
             try {
-                let formData = new FormData();
-                // Append form fields
-                formData.append('pwd_id', this.form.pwd_id || this.selectedPWD.id);
-                formData.append('diagnosis', this.form.diagnosis || "");
-                formData.append('doctor_name', this.form.doctor_name || "");
-                formData.append('hospital_name', this.form.hospital_name || "");
-                formData.append('last_checkup_date', this.form.last_checkup_date || "");
-
-                 if (!this.selectedPWD) {
+                if (!this.selectedPWD) {
                   toast.warn('Please select a record name from suggestions')
                   return
                 }
-                const response = await instance.post("/medical_records/", formData, {
+
+                let formData = new FormData();
+                // Append form fields
+                formData.append('pwd_id', this.form.pwd_id || this.selectedPWD.id);
+                formData.append('location', this.form.location || "");
+                formData.append('complaint_description', this.form.complaint_description || "");
+                formData.append('status', this.form.status || "");
+                formData.append('reported_at', this.form.reported_at || "")
+
+                const response = await instance.post("/complaints/", formData, {
                     headers: {
                     'Authorization': `Bearer ${this.$store.state.accessToken}`,
                     'Content-Type': 'multipart/form-data',
                     }
                 });
-                this.medicalRecord = response.data; // Add new medical record to the  list
-                toast.success("Medical Record created successfully!");
-                this.fetchMedicalRecords();    // Reset form
+                this.medicalCertificate = response.data; // Add new medical certificate to the  list
+                toast.success("Complaint created successfully!");
+                this.fetchComplaints();    // Reset form
                 this.closeModal();
             } catch (error) {
-                // console.error("Error adding medical record:", error);
-                toast.error("Failed to create medical record.", error);
+                // console.error("Error adding complaint:", error);
+                toast.error("Failed to create complaint.", error);
             }
         },
-        async updateMedicalRecord() {
+        async updateComplaint() {
             try {
+                // if (!this.selectedPWD) {
+                //   toast.warn('Please select a record name from suggestions')
+                //   return
+                // }
+
                 let formData = new FormData();
                 // Append form fields
                 formData.append('pwd_id', this.form.pwd_id || this.selectedPWD.id);
-                formData.append('diagnosis', this.form.diagnosis || "");
-                formData.append('doctor_name', this.form.doctor_name || "");
-                formData.append('hospital_name', this.form.hospital_name || "");
-                formData.append('last_checkup_date', this.form.last_checkup_date || "");
+                formData.append('location', this.form.location || "");
+                formData.append('complaint_description', this.form.complaint_description || "");
+                formData.append('status', this.form.status || "");
+                formData.append('reported_at', this.form.reported_at || "")
 
-                 if (!this.selectedPWD) {
-                  toast.warn('Please select a record name from suggestions')
-                  return
-                }
-
-                const response = await instance.put(`/medical_records/${this.form.id}/`, formData, {
+                const response = await instance.patch(`/complaints/${this.form.id}/`, formData, {
+                    headers: {
+                    'Authorization': `Bearer ${this.$store.state.accessToken}`,
+                    }
+                });
+                this.medicalCertificate = response.data;
+                toast.success("Complaint updated successfully!");
+                this.fetchComplaints();    // Reset form
+                this.closeModal();
+            } catch (error) {
+                toast.error("Error updating complaint!", error);
+                // console.error("Error updating complaint:", error);
+            }
+        },
+        async deleteComplaint(id) {
+            if(confirm('Are you sure you want to delete this complaint?')){
+                await instance.delete(`/complaints/${id}/`, {
                     headers: {
                     'Authorization': `Bearer ${this.$store.state.accessToken}`,
                     'Content-Type': 'multipart/form-data',
-                    }
-                });
-                this.medicalRecord = response.data;
-                toast.success("Medical Record updated successfully!");
-                this.fetchMedicalRecords();    // Reset form
-                this.closeModal();
-            } catch (error) {
-                toast.error("Error updating medical record!", error);
-                // console.error("Error updating medical record:", error);
-            }
-        },
-        async deleteServiceType(id) {
-            if(confirm('Are you sure you want to delete this medical record?')){
-                await instance.delete(`/medical_records/${id}/`, {
-                    headers: {
-                    'Authorization': `Bearer ${this.$store.state.accessToken}`,
                     }
                 })
-                .then(() => this.fetchMedicalRecords(), toast.success("Medical Record deleted successfully!"))
+                .then(() => this.fetchComplaints(), toast.success("Complaint deleted successfully!"))
                 .catch(error => //console.error(error); 
-                    toast.error("Error deleting medical record!", error)
+                    toast.error("Error deleting complaint!", error)
                 );
             }
         },
         closeModal() {
-            const modal = Modal.getInstance(document.getElementById('medicalRecordsModal'));
+            const modal = Modal.getInstance(document.getElementById('complaintsModal'));
             modal.hide();
         },
     },
     created() {
-        this.fetchMedicalRecords();
+        this.fetchComplaints();
         this.fetchRecords();
     },
 };

@@ -4,11 +4,11 @@
         <Sidebar />
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <nav aria-label="breadcrumb" class="container-fluid">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><RouterLink to="/medical_records">Medical Records</RouterLink></li>
-                        <li class="breadcrumb-item active" aria-current="page">Overview</li>
-                    </ol>
-                </nav>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><RouterLink to="/certificates">Medical Certificate</RouterLink></li>
+                    <li class="breadcrumb-item active" aria-current="page">Overview</li>
+                </ol>
+            </nav>
 
             <!-- Floating button -->
              <button 
@@ -20,11 +20,11 @@
             </button>
 
             <!-- Add Service Type Modal -->
-             <div class="modal fade" id="medicalRecordsModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="medicalRecordsModalLabel">
+             <div class="modal fade" id="medicalCertificateModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="medicalCertificateModalLabel">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title fs-5" id="medicalRecordsModalLabel">{{ modalTitle }}</h5>
+                            <h5 class="modal-title fs-5" id="medicalCertificateModalLabel">{{ modalTitle }}</h5>
                             <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <form @submit.prevent="handleSubmit">
@@ -55,20 +55,13 @@
                                   </div>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="diagnosis" class="form-label">Diagnosis</label>
-                                    <textarea name="diagnosis" id="diagnosis" rows="3" v-model="form.diagnosis" class="form-control" required></textarea>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="doctor_name" class="form-label">Doctor's Name</label>
-                                    <input type="text" name="doctor_name" id="doctor_name" placeholder="Doctor's Name..." v-model="form.doctor_name" class="form-control">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="hospital_name" class="form-label">Hospital Name</label>
-                                    <input type="text" name="hospital_name" id="hospital_name" placeholder="Hospital Name..." v-model="form.hospital_name" class="form-control">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="last_checkup_date" class="form-label">Last Checkup Date</label>
-                                    <input type="date" name="last_checkup_date" id="last_checkup_date" v-model="form.last_checkup_date" class="form-control">
+                                    <label for="medical_certificate" class="form-label">Diagnosis</label>
+                                    <input type="file" 
+                                            id="picture" 
+                                            name="picture" 
+                                            class="form-control"
+                                            @change="handleFileChange($event)"
+                                            accept="image/*" />
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -85,36 +78,32 @@
                 <table class="table table-striped table-hover">
                     <thead>
                         <tr>
-                            <th>ID</th>
                             <th>PWD Name</th>
-                            <th>Diagnosis</th>
-                            <th>Doctor's Name</th>
-                            <th>Hospital Name</th>
-                            <th>Last Checkup Date</th>
+                            <th>Medical Certificate</th>
+                            <th>Created Date</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody v-if="this.medicalRecord?.length > 0">
-                        <tr v-for="mrecord in medicalRecord" :key="mrecord.id">
+                    <tbody v-if="this.medicalCertificate?.length > 0">
+                        <tr v-for="mrecord in medicalCertificate" :key="mrecord.id">
                             <td>{{ mrecord.id }}</td>
                             <td>{{ mrecord.pwd_name }}</td>
-                            <td>{{ mrecord.diagnosis }}</td>
-                            <td>{{ mrecord.doctor_name }}</td>
-                            <td>{{ mrecord.hospital_name }}</td>
-                            <td>{{ mrecord.last_checkup_date }}</td>
+                            <td><img :src="mrecord.medical_certificate" :alt="mrecord.pwd_name" class="rounded-circle img-fluid" style="width:50px; height:50px;"/></td>
+                            <td>{{ mrecord.created_at }}</td>
                             <td>
                                 <button class="btn btn-sm btn-warning me-2" @click="openModal('edit', mrecord)">Edit</button>
-                                <button class="btn btn-sm btn-danger" @click="deleteMedicalRecord(mrecord.id)">Delete</button>
+                                <button class="btn btn-sm btn-danger" @click="deleteMedicalCertificate(mrecord.id)">Delete</button>
                             </td>
                         </tr>
                     </tbody>
                     <tbody v-else>
                         <tr>
-                            <td colspan="7">Loading...</td>
+                            <td colspan="5">Loading...</td>
                         </tr>
                     </tbody>
                   </table>
             </div>
+              
 
               <!-- Pagination controls -->
                <nav aria-label="Page navigation">
@@ -150,18 +139,15 @@ export default {
         Navbar,
         Sidebar,
     },
-    name: "MedicalRecordPage",
+    name: "CertificatePage",
     data() {
         return {
-            medicalRecord: [],
+            medicalCertificate: [],
             form: {
                 id: null,
                 pwd_id: "",
                 // pwd_name: "",
-                diagnosis: "",
-                doctor_name: "",
-                hospital_name: "",
-                last_checkup_date: ""
+                medical_certificate: ""
             },
             page: 1,
             suggestions: [],
@@ -178,25 +164,25 @@ export default {
         };
     },
     methods: {
-        async fetchMedicalRecords(url = `/medical_records/?page=${this.page}`) {
+        async fetchMedicalCertificate(url = `/certificates/?page=${this.page}`) {
             try {
                 const response = await instance.get(url, {
                     headers: {
                     'Authorization': `Bearer ${this.$store.state.accessToken}`,
                 }
                 });
-                this.medicalRecord = response.data.results;
+                this.medicalCertificate = response.data.results;
                 this.pagination.next = response.data.next;
                 this.pagination.prev = response.data.previous;
                 console.log(response.data);
             } catch (error) {
-                toast.error("Error fetching Medical Records!");
-                console.error("Error fetching Medical Records:", error);
+                toast.error("Error fetching Medical Certificate!");
+                console.error("Error fetching Medical Certificate:", error);
             }
         },
         changePage(url) {
             if (url) {
-                this.fetchMedicalRecords(url);
+                this.fetchMedicalCertificate(url);
             }
         },
         async fetchRecords() {
@@ -256,103 +242,126 @@ export default {
           },
         openModal(action, mrecord = null) {
             if (action === 'create') {
-                this.modalTitle = 'Add Medical Record';
+                this.modalTitle = 'Add Medical Certificate';
                 this.modalAction = 'Create';
-                this.form = { id: null, pwd_id: "", diagnosis: "", doctor_name: "", hospital_name: "", last_checkup_date: "" };
+                this.form = { id: null, pwd_id: "", medical_certificate: null };
             } else if (action === 'edit') {
-                this.modalTitle = 'Edit Medical Record';
+                this.modalTitle = 'Edit Medical Certificate';
                 this.modalAction = 'Update';
                 this.form = { ...mrecord };
             }
-            const modal = new Modal(document.getElementById('medicalRecordsModal'));
+            const modal = new Modal(document.getElementById('medicalCertificateModal'));
             modal.show();
+        },
+        handleFileChange(event){
+            console.log(event.target.files[0]);
+            const file = event.target.files[0];
+            if(!file) return;
+
+            this.form.medical_certificate = file;
+            this.createBase64Image(file);
+        },
+        createBase64Image(fileObject){
+            // converts image to a text file for backend to read
+            const reader = new FileReader();
+
+            reader.onChange = (event) => {
+                this.form.medical_certificate = event.target.result;
+                // this.handleSubmit();
+            };
+            reader.readAsDataURL(fileObject);
         },
         handleSubmit() {
             if (this.modalAction === 'Create') {
-                this.createMedicalRecord();
+                this.createMedicalCertificate();
             } else {
-                this.updateMedicalRecord();
+                this.updateMedicalCertificate();
             }
         },
-        async createMedicalRecord() {
+        async createMedicalCertificate() {
             try {
-                let formData = new FormData();
-                // Append form fields
-                formData.append('pwd_id', this.form.pwd_id || this.selectedPWD.id);
-                formData.append('diagnosis', this.form.diagnosis || "");
-                formData.append('doctor_name', this.form.doctor_name || "");
-                formData.append('hospital_name', this.form.hospital_name || "");
-                formData.append('last_checkup_date', this.form.last_checkup_date || "");
-
-                 if (!this.selectedPWD) {
+                if (!this.selectedPWD) {
                   toast.warn('Please select a record name from suggestions')
                   return
                 }
-                const response = await instance.post("/medical_records/", formData, {
+
+                let formData = new FormData();
+                // Append form fields
+                formData.append('pwd_id', this.form.pwd_id || this.selectedPWD.id);
+                // formData.append('medical_certificate', this.form.medical_certificate || "");
+
+                if (this.form.medical_certificate instanceof File){
+                    formData.append('medical_certificate', this.form.medical_certificate);
+                } else {
+                    toast.warn('Pleass upload a valid medical certificate image');
+                    return;
+                }
+
+                const response = await instance.post("/certificates/", formData, {
                     headers: {
                     'Authorization': `Bearer ${this.$store.state.accessToken}`,
                     'Content-Type': 'multipart/form-data',
                     }
                 });
-                this.medicalRecord = response.data; // Add new medical record to the  list
-                toast.success("Medical Record created successfully!");
-                this.fetchMedicalRecords();    // Reset form
+                this.medicalCertificate = response.data; // Add new medical certificate to the  list
+                toast.success("Medical Certificate created successfully!");
+                this.fetchMedicalCertificate();    // Reset form
                 this.closeModal();
             } catch (error) {
-                // console.error("Error adding medical record:", error);
-                toast.error("Failed to create medical record.", error);
+                // console.error("Error adding medical certificate:", error);
+                toast.error("Failed to create medical certificate.", error);
             }
         },
-        async updateMedicalRecord() {
+        async updateMedicalCertificate() {
             try {
+                // if (!this.selectedPWD) {
+                //   toast.warn('Please select a record name from suggestions')
+                //   return
+                // }
+
                 let formData = new FormData();
                 // Append form fields
                 formData.append('pwd_id', this.form.pwd_id || this.selectedPWD.id);
-                formData.append('diagnosis', this.form.diagnosis || "");
-                formData.append('doctor_name', this.form.doctor_name || "");
-                formData.append('hospital_name', this.form.hospital_name || "");
-                formData.append('last_checkup_date', this.form.last_checkup_date || "");
+                // formData.append('medical_certificate', this.form.medical_certificate || "");
 
-                 if (!this.selectedPWD) {
-                  toast.warn('Please select a record name from suggestions')
-                  return
+                if (this.form.medical_certificate instanceof File){
+                    formData.append('medical_certificate', this.form.medical_certificate)
                 }
-
-                const response = await instance.put(`/medical_records/${this.form.id}/`, formData, {
+                const response = await instance.patch(`/certificates/${this.form.id}/`, formData, {
+                    headers: {
+                    'Authorization': `Bearer ${this.$store.state.accessToken}`,
+                    }
+                });
+                this.medicalCertificate = response.data;
+                toast.success("Medical Certificate updated successfully!");
+                this.fetchMedicalCertificate();    // Reset form
+                this.closeModal();
+            } catch (error) {
+                toast.error("Error updating medical certificate!", error);
+                // console.error("Error updating medical certificate:", error);
+            }
+        },
+        async deleteMedicalCertificate(id) {
+            if(confirm('Are you sure you want to delete this medical certificate?')){
+                await instance.delete(`/certificates/${id}/`, {
                     headers: {
                     'Authorization': `Bearer ${this.$store.state.accessToken}`,
                     'Content-Type': 'multipart/form-data',
-                    }
-                });
-                this.medicalRecord = response.data;
-                toast.success("Medical Record updated successfully!");
-                this.fetchMedicalRecords();    // Reset form
-                this.closeModal();
-            } catch (error) {
-                toast.error("Error updating medical record!", error);
-                // console.error("Error updating medical record:", error);
-            }
-        },
-        async deleteServiceType(id) {
-            if(confirm('Are you sure you want to delete this medical record?')){
-                await instance.delete(`/medical_records/${id}/`, {
-                    headers: {
-                    'Authorization': `Bearer ${this.$store.state.accessToken}`,
                     }
                 })
-                .then(() => this.fetchMedicalRecords(), toast.success("Medical Record deleted successfully!"))
+                .then(() => this.fetchMedicalCertificate(), toast.success("Medical Certificate deleted successfully!"))
                 .catch(error => //console.error(error); 
-                    toast.error("Error deleting medical record!", error)
+                    toast.error("Error deleting medical certificate!", error)
                 );
             }
         },
         closeModal() {
-            const modal = Modal.getInstance(document.getElementById('medicalRecordsModal'));
+            const modal = Modal.getInstance(document.getElementById('medicalCertificateModal'));
             modal.hide();
         },
     },
     created() {
-        this.fetchMedicalRecords();
+        this.fetchMedicalCertificate();
         this.fetchRecords();
     },
 };

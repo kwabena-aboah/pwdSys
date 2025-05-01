@@ -1,7 +1,8 @@
 from django.shortcuts import render
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.db import models
 from datetime import date, timedelta
+from django.utils.dateparse import parse_date
 from . models import DisabilityType, ServiceType, PWDRecord, Certificate, MedicalRecords, SupportServices, Complaints
 from .serializers import DisabilityTypeSerializer, ServiceTypeSerializer, PWDRecordSerializer, CertificateSerializer, MedicalRecordsSerializer, SupportServicesSerializer, ComplaintsSerializer
 from .permissions import IsAdminOrSocialWorkerOrMedicalOfficer, IsOwnerOrReadOnly
@@ -48,18 +49,6 @@ class ServiceTypeViewSet(viewsets.ModelViewSet):
         paginated_queryset = paginator.paginate_queryset(self.queryset, request)
         serializer = ServiceTypeSerializer(paginated_queryset, many=True)
         return paginator.get_paginated_response(serializer.data)
-
-class ServiceTypeSearchView(ListAPIView):
-    serializer_class = ServiceTypeSerializer
-    pagination_class = ModelPagination
-
-    def get_queryset(self):
-        query = self.request.query_params.get('q', '')
-        if query:
-            return ServiceType.objects.filter(
-                Q(service_name__icontains=query)
-            )
-        return ServiceType.objects.none()
 
 class PWDRecordViewSet(viewsets.ModelViewSet):
     queryset = PWDRecord.objects.all()
@@ -121,6 +110,79 @@ class PWDSearchView(ListAPIView):
             )
         return PWDRecord.objects.none()
 
+# PWD Report Viewset
+class PWDReportView(APIView):
+    permission_classes = (IsAuthenticated,)
+    
+    def get(self, request):
+        queryset = PWDRecord.objects.all()
+
+        start_date = request.GET.get('startDate')
+        end_date = request.GET.get('endDate')
+
+        if start_date:
+            queryset = queryset.filter(registration_date__gte=parse_date(start_date))
+        if end_date:
+            queryset = queryset.filter(registration_date__lte=parse_date(end_date))
+
+        total_record = queryset.count()
+        total_males = queryset.filter(gender='male').count()
+        total_females = queryset.filter(gender='female').count()
+
+        return Response({
+            "total_record": total_record,
+            "total_males": total_males,
+            "total_females": total_females
+        })
+
+# Report by Disability Viewset
+class PWDByDisabilityView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        queryset = PWDRecord.objects.all()
+
+        start_date = request.GET.get('startDate')
+        end_date = request.GET.get('endDate')
+
+        if start_date:
+            queryset = queryset.filter(registration_date__gte=parse_date(start_date))
+        if end_date:
+            queryset = queryset.filter(registration_date__lte=parse_date(end_date))
+
+        result = {}
+        for entry in queryset:
+            disability = str(entry.disability_type)
+            gender = entry.gender.lower()
+            if disability not in result:
+                result[disability] = {'male': 0, 'female': 0}
+            if gender in result[disability]:
+                result[disability][gender] += 1
+        return Response(result, status=status.HTTP_200_OK)
+
+# Report by Verified PWD Record Viewset
+class VerifiedPWDCountView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        queryset = PWDRecord.objects.all()
+
+        start_date = request.GET.get('startDate')
+        end_date = request.GET.get('endDate')
+
+        if start_date:
+            queryset = queryset.filter(registration_date__gte=parse_date(start_date))
+        if end_date:
+            queryset = queryset.filter(registration_date__lte=parse_date(end_date))
+
+        verified = queryset.filter(is_verified=True).count()
+        total = queryset.count()
+
+        return Response({
+            'verified': verified,
+            'total': total
+            })
+
 class CertificateViewSet(viewsets.ModelViewSet):
     queryset = Certificate.objects.all()
     serializer_class = CertificateSerializer
@@ -140,7 +202,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
         serializer = CertificateSerializer(paginated_queryset, many=True)
         return paginator.get_paginated_response(serializer.data)
 
-    def update(self, request, *args, **kwargs):
+    def partial_update(self, request, *args, **kwargs):
         """ Ensure optional picture upload on edit """
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
@@ -151,13 +213,14 @@ class CertificateViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-        return Response(serializer)
+        return Response(serializer.data)
 
 class MedicalRecordsViewSet(viewsets.ModelViewSet):
     queryset = MedicalRecords.objects.all()
     serializer_class = MedicalRecordsSerializer
     filter_backends = [DjangoFilterBackend]
     permission_classes = (IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer)
+    parser_classes = (MultiPartParser, FormParser)
 
     def get_queryset(self):
         return MedicalRecords.objects.filter(user=self.request.user)

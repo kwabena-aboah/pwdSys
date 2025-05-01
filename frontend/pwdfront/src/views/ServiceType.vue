@@ -3,7 +3,12 @@
         <Navbar />
         <Sidebar />
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-            <h2 class="text-center">Service Type</h2>
+            <nav aria-label="breadcrumb" class="container-fluid">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><RouterLink to="/service_type">Service Type</RouterLink></li>
+                    <li class="breadcrumb-item active" aria-current="page">Overview</li>
+                </ol>
+            </nav>
 
             <!-- Floating button -->
              <button 
@@ -43,34 +48,36 @@
              </div>
 
             <!-- Service Type list -->
-              <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Service Name</th>
-                        <th>Description</th>
-                        <th>Created Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody v-if="this.serviceType?.length > 0">
-                    <tr v-for="stype in serviceType" :key="stype.id">
-                        <td>{{ stype.id }}</td>
-                        <td>{{ stype.service_name }}</td>
-                        <td>{{ stype.description }}</td>
-                        <td>{{ stype.created_on }}</td>
-                        <td>
-                            <button class="btn btn-sm btn-warning me-2" @click="openModal('edit', stype)">Edit</button>
-                            <button class="btn btn-sm btn-danger" @click="deleteServiceType(stype.id)">Delete</button>
-                        </td>
-                    </tr>
-                </tbody>
-                <tbody v-else>
-                    <tr>
-                        <td colspan="5">Loading...</td>
-                    </tr>
-                </tbody>
-              </table>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Service Name</th>
+                            <th>Description</th>
+                            <th>Created Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody v-if="this.serviceType?.length > 0">
+                        <tr v-for="stype in serviceType" :key="stype.id">
+                            <td>{{ stype.id }}</td>
+                            <td>{{ stype.service_name }}</td>
+                            <td>{{ stype.description }}</td>
+                            <td>{{ stype.created_on }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-warning me-2" @click="openModal('edit', stype)">Edit</button>
+                                <button class="btn btn-sm btn-danger" @click="deleteServiceType(stype.id)">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody v-else>
+                        <tr>
+                            <td colspan="5">Loading...</td>
+                        </tr>
+                    </tbody>
+                  </table>
+            </div>
 
               <!-- Pagination controls -->
                <nav aria-label="Page navigation">

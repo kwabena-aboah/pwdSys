@@ -105,7 +105,7 @@ export default {
         return;
       }
       try {
-        const response = await instance.get(`/api/pwd/search/`, {
+        const response = await instance.get(`/pwd/search/`, {
                 headers: {
                     'Authorization': `Bearer ${this.$store.state.accessToken}`,
                 },
@@ -123,7 +123,7 @@ export default {
     selectSuggestion(full_name){
       this.searchQuery = full_name;
       this.suggestions = [];
-      this.searchMembers();
+      this.searchRecords();
     },
     nextPage() {
       this.pagination.offset += this.pagination.limit;

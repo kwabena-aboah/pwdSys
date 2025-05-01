@@ -28,6 +28,24 @@ const routes = [
         meta: { requiresAuth: true },
     },
     {
+        path: '/beneficiary-support',
+        name: 'BenefitSupport',
+        component: () => import('../views/BenefitSupport.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/certificates',
+        name: 'CertificatePage',
+        component: () => import('../views/Certificate.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/complaints',
+        name: 'ComplaintPage',
+        component: () => import('../views/Complaints.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
         path: '/service_type',
         name: 'ServiceTypePage',
         component: () => import('../views/ServiceType.vue'),

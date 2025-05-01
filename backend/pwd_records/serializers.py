@@ -113,7 +113,7 @@ class CertificateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Certificate
         fields = [
-            'user', 'pwd_id', 'pwd_name', 'medical_certificate', 'created_at'
+            'id','user', 'pwd_id', 'pwd_name', 'medical_certificate', 'created_at'
         ]
         extra_kwargs = {'user': {'read_only': True}} # make user auto-assigned
 
@@ -151,6 +151,15 @@ class MedicalRecordsSerializer(serializers.ModelSerializer):
         ]
         extra_kwargs = {'user': {'read_only': True}} # make user auto-assigned
 
+    def validate_pwd_id(self, value):
+        return value if value else None
+
+    def validate_diagnosis(self, value):
+        return value if value else None
+
+    def validate_last_checkup_date(self, value):
+        return value if value else None
+
     def validate(self, data):
         pwd_id = data.get('pwd_id')
         if not PWDRecord.objects.filter(id=pwd_id.id).exists():
@@ -168,11 +177,12 @@ class MedicalRecordsSerializer(serializers.ModelSerializer):
 class SupportServicesSerializer(serializers.ModelSerializer):
     pwd_id = serializers.PrimaryKeyRelatedField(queryset=PWDRecord.objects.all(), write_only=True)
     pwd_name = serializers.CharField(source='pwd_id.full_name', read_only=True)
+    service_name = serializers.CharField(source='service_type.service_name', read_only=True)
 
     class Meta:
         model = SupportServices
         fields = [
-            'id', 'pwd_id', 'pwd_name', 'service_type', 'application_status', 'approval_date', 'user'
+            'id', 'pwd_id', 'pwd_name', 'service_type', 'service_name', 'application_status', 'approval_date', 'user'
         ]
         extra_kwargs = {'user': {'read_only': True}} # make user auto-assigned
 
@@ -197,7 +207,7 @@ class ComplaintsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Complaints
         fields = [
-            'id', 'pwd_id', 'pwd_name', 'location', 'complaint_description', 'status', 'user'
+            'id', 'pwd_id', 'pwd_name', 'location', 'complaint_description', 'status', 'reported_at', 'user'
         ]
         extra_kwargs = {'user': {'read_only': True}} # make user auto-assigned
 

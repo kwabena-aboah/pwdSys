@@ -22,7 +22,7 @@ from django.conf.urls.static import static
 from django.views.static import serve
 from rest_framework.routers import DefaultRouter
 from users.views import UserViewset, verify_mfa
-from pwd_records.views import DisabilityTypeViewSet, ServiceTypeViewSet, ServiceTypeSearchView, PWDRecordViewSet, PWDSearchView, CertificateViewSet, MedicalRecordsViewSet, SupportServicesViewSet, ComplaintsViewSet
+from pwd_records.views import DisabilityTypeViewSet, ServiceTypeViewSet, PWDRecordViewSet, PWDSearchView, PWDReportView, PWDByDisabilityView, VerifiedPWDCountView, CertificateViewSet, MedicalRecordsViewSet, SupportServicesViewSet, ComplaintsViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 router = DefaultRouter()
@@ -41,7 +41,9 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/pwd/search/', PWDSearchView.as_view(), name='pwd-search'),
-    path('api/service/search/', ServiceTypeSearchView.as_view(), name='service-search'),
+    path('api/pwd/report/', PWDReportView.as_view(), name='pwd-report'),
+    path('api/pwd/disability-report/', PWDByDisabilityView.as_view(), name='pwd-disability-report'),
+    path('api/pwd/verified-report/', VerifiedPWDCountView.as_view(), name='pwd-verified-report'),
     path('api/verify-mfa/', verify_mfa, name='verify-mfa'),
     re_path(r'^media/(?P<path>.*)$', serve,
         {'document_root': settings.MEDIA_ROOT}),
