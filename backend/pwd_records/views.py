@@ -3,14 +3,14 @@ from django.db.models import Count, Q
 from django.db import models
 from datetime import date, timedelta
 from django.utils.dateparse import parse_date
-from . models import DisabilityType, ServiceType, PWDRecord, Certificate, MedicalRecords, SupportServices, Complaints
-from .serializers import DisabilityTypeSerializer, ServiceTypeSerializer, PWDRecordSerializer, CertificateSerializer, MedicalRecordsSerializer, SupportServicesSerializer, ComplaintsSerializer
+from . models import DisabilityType, ServiceType, PWDRecord, Certificate, MedicalRecords, SupportServices, Complaints, DocumentAuditLog
+from .serializers import DisabilityTypeSerializer, ServiceTypeSerializer, PWDRecordSerializer, CertificateSerializer, MedicalRecordsSerializer, SupportServicesSerializer, ComplaintsSerializer, DocumentAuditLogSerializer
 from .permissions import IsAdminOrSocialWorkerOrMedicalOfficer, IsOwnerOrReadOnly
 from rest_framework import viewsets, generics, permissions, mixins
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.generics import ListAPIView
 from django_filters.rest_framework import DjangoFilterBackend
-# from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from .ai_verifier import fake_ai_verify
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import BasePermission, AllowAny, IsAuthenticated, IsAdminUser, SAFE_METHODS
+import os
 
 class ModelPagination(LimitOffsetPagination):
     page_size = 10 # Default page size
@@ -269,3 +270,66 @@ class ComplaintsViewSet(viewsets.ModelViewSet):
         paginated_queryset = paginator.paginated_queryset(self.queryset, request)
         serializer = ComplaintsSerializer(paginated_queryset, many=True)
         return paginator.get_paginated_response(serializer.data)
+
+class DocumentVerificationView(APIView):
+    permission_classes = (IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer)
+
+    def post(self, request):
+        doc_type = request.data.get('document_type')
+        related_id = request.data.get('related_id')
+
+        try:
+            # Select appropriate model
+            if doc_type == 'certificate':
+                doc = Certificate.objects.get(id=related_id)
+                img_path = doc.medical_certificate.path 
+            elif doc_type == 'id_card':
+                doc = PWDRecord.objects.get(id=related_id)
+                img_path = doc.id_photo.path
+            else:
+                return Response({'error': 'Invalid document type'}, status=400)
+        except Exception as e:
+            return Response({"error": str(e)}, status=404)
+
+        is_verified = fake_ai_verify(img_path)
+
+        verification = DocumentAuditLog.objects.create(
+            document_type=doc_type,
+            related_id=related_id,
+            verified=is_verified["verified"],
+            result=is_verified["reason"]
+        )
+
+        return Response({
+            "id": verification.id,
+            "verified": verification.verified,
+            "result": verification.result,
+            "text_extracted": is_verified["text"]
+            }, status=200)
+
+class UploadAndVerifyDocumentView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = (IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer)
+
+    def post(self, request):
+        uploaded_file = request.FILES.get('file')
+        if not uploaded_file:
+            return Response({"error": "No file uploaded"}, status=400)
+
+        # Temporarily save the file
+        temp_path = f"/tmp/{uploaded_file.name}"
+        with open(temp_path, "wb+") as f:
+            for chunk in uploaded_file.chunks():
+                f.write(chunk)
+
+        # AI verification
+        ai_result = fake_ai_verify(temp_path)
+
+        # Optionally delete after use
+        os.remove(temp_path)
+
+        return Response({
+            "verified": ai_result["verified"],
+            "result": ai_result["reason"],
+            "text_extracted": ai_result["text"]
+            }, status=200)

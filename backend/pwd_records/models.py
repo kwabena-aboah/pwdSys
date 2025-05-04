@@ -108,6 +108,19 @@ class Complaints(models.Model):
 	def __str__(self):
 		return f"{self.pwd_id.full_name} - {self.complaint_description}"
 
+class DocumentAuditLog(models.Model):
+	document_type = models.CharField(max_length=50, choices=[
+		('certificate', 'Certificate'),
+		('id_card', 'ID Card')
+	])
+	related_id = models.PositiveIntegerField() # Foreign key ID from target model
+	result = models.CharField(max_length=255, blank=True, null=True)
+	verified = models.BooleanField(default=False)
+	verified_at = models.DateTimeField(auto_now_add=True)
+
+	def __str__(self):
+		return f"{self.document_type} ID {self.related_id} - Verified: {self.verified}"
+
 
 auditlog.register(PWDRecord)
 auditlog.register(MedicalRecords)

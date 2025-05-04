@@ -4,7 +4,7 @@ import six
 import uuid
 import binascii
 from rest_framework import serializers
-from . models import DisabilityType, ServiceType, PWDRecord, Certificate, MedicalRecords, SupportServices, Complaints
+from . models import DisabilityType, ServiceType, PWDRecord, Certificate, MedicalRecords, SupportServices, Complaints, DocumentAuditLog
 from users.models import User
 
 class Base64ImageField(serializers.ImageField):
@@ -224,3 +224,8 @@ class ComplaintsSerializer(serializers.ModelSerializer):
         else:
             raise serializers.ValidationError("User information is missing.")
         return super().create(validated_data)
+
+class DocumentAuditLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentAuditLog
+        fields = '__all__'

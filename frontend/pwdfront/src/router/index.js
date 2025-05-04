@@ -57,6 +57,18 @@ const routes = [
         component: () => import('../views/MedicalRecords.vue'),
         meta: { requiresAuth: true },
     },
+    {
+        path: '/verify-document',
+        name: 'VerifyDocument',
+        component: () => import('../views/VerifyDocument.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/verify-upload',
+        name: 'VerifyUpload',
+        component: () => import('../views/VerifyUpload.vue'),
+        meta: { requiresAuth: true },
+    },
 ];
 
 const router  = createRouter({
