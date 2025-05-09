@@ -4,9 +4,10 @@ from django.db import models
 from datetime import date, timedelta
 from django.utils.dateparse import parse_date
 from . models import DisabilityType, ServiceType, PWDRecord, Certificate, MedicalRecords, SupportServices, Complaints, DocumentAuditLog
+from .filters import PWDRecordFilter
 from .serializers import DisabilityTypeSerializer, ServiceTypeSerializer, PWDRecordSerializer, CertificateSerializer, MedicalRecordsSerializer, SupportServicesSerializer, ComplaintsSerializer, DocumentAuditLogSerializer
 from .permissions import IsAdminOrSocialWorkerOrMedicalOfficer, IsOwnerOrReadOnly
-from rest_framework import viewsets, generics, permissions, mixins
+from rest_framework import viewsets, generics, permissions, mixins, filters
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.generics import ListAPIView
 from django_filters.rest_framework import DjangoFilterBackend
@@ -54,8 +55,9 @@ class ServiceTypeViewSet(viewsets.ModelViewSet):
 class PWDRecordViewSet(viewsets.ModelViewSet):
     queryset = PWDRecord.objects.all()
     serializer_class = PWDRecordSerializer
-    filter_backends = [DjangoFilterBackend]
-    search_fields = ['is_verified', 'disability_type']
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = PWDRecordFilter
+    search_fields = ['full_name', 'contact_number']
     ordering_fields = ['is_verified', 'registration_date']
     ordering = ['registration_date']
     permission_classes = (IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer)
@@ -66,23 +68,6 @@ class PWDRecordViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-
-    def get(self, request, *args, **kwargs):
-        query = self.request.query_params.get('q', '').strip()
-        pwd_record = self.get_queryset()
-        if query:
-            return pwd_record.filter(
-                Q(full_name__icontains=query) | Q(contact_number__icontains=query)
-            )
-        if pwd_record.exists():
-            serializer = self.get_serializer(pwd_record, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response({"message": "No records found"}, status=status.HTTP_204_NO_CONTENT)
-
-        paginator = ModelPagination()
-        paginated_queryset = paginator.paginate_queryset(pwd_record, request)
-        serializer = PWDRecordSerializer(paginated_queryset, many=True)
-        return paginator.get_paginated_response(serializer.data, status=status.HTTP_200_OK)
 
     def update(self, request, *args, **kwargs):
         """Ensure optional picture upload on edit"""

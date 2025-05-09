@@ -113,9 +113,26 @@
                 </div>
              </div>
 
-             <!-- Search filter -->
-             <div class="mb-3">
-                 <input type="text" name="search" class="form-control" v-model="searchQuery" placeholder="Search name or contact number..." @input="this.fetchRecords(1)">
+             <!-- Search filter & Ordering -->
+             <div class="container-fluid">
+                 <div class="row mb-3">
+                     <div class="col-sm-12 col-md-4 col-lg-4">
+                       <input type="text" name="search" class="form-control" v-model="searchQuery" placeholder="Search name or contact number..." @input="this.fetchRecords(1)">
+                   </div>
+                   <div class="col-sm-12 col-md-4 col-lg-4">
+                       <select v-model="ordering" @change="this.fetchRecords(1)" class="form-select">
+                         <option value="registration_date">Registration Date (Asc)</option>
+                         <option value="-registration_date">Registration Date (Desc)</option>
+                       </select>
+                   </div>
+                   <div class="col-sm-12 col-md-4 col-lg-4">
+                       <select v-model="filters.is_verified" @change="this.fetchRecords(1)" class="form-select">
+                         <option value="">All Verification Status</option>
+                         <option :value="true">Verified</option>
+                         <option :value="false">Not Verified</option>
+                       </select>
+                   </div>
+                 </div>
              </div>
              
              <!-- PWDRecords list -->
@@ -208,11 +225,15 @@ export default {
       },
       suggestions: [],
       searchQuery: "",
+      ordering: "registration_date",
+      filters: {
+        is_verified: "",
+      },
       activeIndex: -1,
       isFocused: false,
       selectedDisability: null,
       debouceTimeout: null,
-      page: 1,
+      loading: false,
       modalTitle: '',
       modalAction: '',
       pagination: {
@@ -226,9 +247,16 @@ export default {
     this.fetchDisabilityType();
   },
   methods: {
-    async fetchRecords(url = `/pwd_records/?q=${this.searchQuery}&page=${this.page}`) {
+    async fetchRecords(page = 1) {
       try {
-        // this.loading = true;
+        this.loading = true;
+
+        let url = `/pwd_records/?search=${this.searchQuery}&page=${page}&ordering=${this.ordering}`;
+
+        if (this.filters.is_verified !== ''){
+          url += `&is_verified=${this.filters.is_verified}`;
+        }
+
         const response = await instance.get(url, {
             headers: {
             'Authorization': `Bearer ${this.$store.state.accessToken}`,
@@ -245,7 +273,9 @@ export default {
         toast.error(`Error fetching records ${status ? ' (${status})' : ''}!`);
         console.error("Error fetching records:", message);
         // this.records = [];
-      } 
+      } finally {
+        this.loading = false;
+      }
     },
     changePage(url) {
         if (url) {
