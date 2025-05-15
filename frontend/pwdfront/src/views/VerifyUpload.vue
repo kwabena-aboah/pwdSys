@@ -11,19 +11,21 @@
             </nav>
 
             <div class="container mt-5">
+                <div class="p-5 mb-4 bg-light rounded-3 text-center">
+                    <h1 class="display-4 fw-bold">Important Information!</h1>
+                    <p class="lead">Select an image file only (i.e., PNG, JPEG and JPG file types). Do not upload any document file or PDF file format</p>
+                </div>
                 <form @submit.prevent="uploadAndVerify">
                     <div class="mb-3">
-                        <input type="file" name="certificate" @change="onFileChange" class="form-control" required>
+                        <input type="file" name="certificate" @change="onFileChange" class="form-control" required accept="image/png, image/jpeg, image/jpg">
                     </div>
                     <button class="btn btn-primary">Upload & Verify</button>
                 </form>
             </div>
-            <br>
-            <hr>
-            <div v-if="result">
-                <div class="mt-2">
-                    <h5>Extracted Text:</h5>
-                    <pre>{{ result.text_extracted }}</pre>
+            <div v-if="result" class="container mt-5">
+                <div class="p-5 mb-4 bg-light rounded-4 text-center">
+                    <h5 class="display-4 fw-bold">Extracted Text:</h5>
+                    <pre class="lead">{{ result.text_extracted }}</pre>
                 </div>
             </div>
         </main>
@@ -51,9 +53,20 @@ export default {
     },
     methods: {
         onFileChange(e) {
-            this.file = e.target.files[0];
+            const selectedFile = e.target.files[0];
+            if (!selectedFile.type.startsWith("image/")){
+                toast.warn("Only image files (PNG, JPG) are allowed.");
+                this.file = null;
+                return;
+            }
+            this.file = selectedFile;
         },
         async uploadAndVerify(){
+            if (!this.file) {
+                toast.warn("Please select an image file.");
+                return;
+            }
+            
             const formData = new FormData();
             formData.append("file", this.file);
 

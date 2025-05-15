@@ -1,7 +1,12 @@
 from django.shortcuts import render
 from django.db.models import Count, Q
 from django.db import models
+from django.http import HttpResponse
+import csv
+import io
 from datetime import date, timedelta
+from django.template.loader import get_template
+from weasyprint import HTML
 from django.utils.dateparse import parse_date
 from . models import DisabilityType, ServiceType, PWDRecord, Certificate, MedicalRecords, SupportServices, Complaints, DocumentAuditLog
 from .filters import PWDRecordFilter
@@ -29,7 +34,7 @@ class ModelPagination(LimitOffsetPagination):
 class DisabilityTypeViewSet(viewsets.ModelViewSet):
     queryset = DisabilityType.objects.all()
     serializer_class = DisabilityTypeSerializer
-    permission_classes = (IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer)
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         paginator = ModelPagination
@@ -37,14 +42,11 @@ class DisabilityTypeViewSet(viewsets.ModelViewSet):
         serializer = DisabilityTypeSerializer(paginated_queryset, many=True)
         return paginator.get_paginated_response(serializer.data)
 
-    def get_queryset(self):
-        query = self.request.query_params.get('q', '')
-        return DisabilityType.objects.filter(disability_type__icontains=query)[:10]
 
 class ServiceTypeViewSet(viewsets.ModelViewSet):
     queryset = ServiceType.objects.all()
     serializer_class = ServiceTypeSerializer
-    permission_classes = (IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer)
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         paginator = ModelPagination
@@ -98,7 +100,7 @@ class PWDSearchView(ListAPIView):
 
 # PWD Report Viewset
 class PWDReportView(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer)
     
     def get(self, request):
         queryset = PWDRecord.objects.all()
@@ -123,7 +125,7 @@ class PWDReportView(APIView):
 
 # Report by Disability Viewset
 class PWDByDisabilityView(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer)
 
     def get(self, request):
         queryset = PWDRecord.objects.all()
@@ -148,7 +150,7 @@ class PWDByDisabilityView(APIView):
 
 # Report by Verified PWD Record Viewset
 class VerifiedPWDCountView(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer)
 
     def get(self, request):
         queryset = PWDRecord.objects.all()
@@ -168,6 +170,44 @@ class VerifiedPWDCountView(APIView):
             'verified': verified,
             'total': total
             })
+
+class PWDRecordExportCSV(APIView):
+    permission_classes = (IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer)
+
+    def get(self, request):
+        f = PWDRecordFilter(request.GET, queryset=PWDRecord.objects.all())
+        records = f.qs 
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['Full Name', 'Disability Type', 'Gender', 'Verified', 'Registration Date'])
+
+        for r in records:
+            writer.writerow([r.full_name, r.disability_type, r.gender, r.is_verified, r.registration_date])
+
+        response = HttpResponse(output.getvalue(), content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="pwd_records.csv"'
+        return response
+
+def export_pwd_pdf(request):
+    search = request.GET.get("search", "")
+    is_verified = request.GET.get("is_verified")
+
+    records = PWDRecord.objects.all()
+
+    if search:
+        records = records.filter(full_name__icontains=search) | records.filter(contact_number__icontains)
+
+    if is_verified in ["true", "false"]:
+        records = records.filter(is_verified=(is_verified == "true"))
+
+    template = get_template("pdf/pwd_report.html")
+    html = template.render({"records": records})
+    pdf_file = HTML(string=html).write_pdf()
+
+    response = HttpResponse(pdf_file, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="PWD_Records_Report.pdf"'
+    return response
 
 class CertificateViewSet(viewsets.ModelViewSet):
     queryset = Certificate.objects.all()

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="container-fluid">
     <form @submit.prevent class="form-inline mb-3">
       <input
       type="text"
@@ -25,13 +25,24 @@
      </ul>
 
      <!-- Search Results -->
-      <ul v-if="records.length">
-        <li v-for="record in records" :key="record.id">
-          <RouterLink :to="{name: 'DashboardPage', params: {id: record.id}}">
-              <strong>{{ record.full_name }} {{ record.contact_number }}</strong>
-          </RouterLink>
-        </li>
-      </ul>
+      <div v-if="records.length" class="list-group">
+        <div v-for="record in records" :key="record.id" class="list-group-item list-group-item-action list-group-flush">
+          <div class="p-5 mb-4 bg-light rounded-4">
+              <img :src="record.id_photo" :alt="record.full_name" class="img-fluid" style="max-width: 200px;"/>
+              <p class="display-4 fw-bold"><em>Full Name:</em> {{ record.full_name }}</p>
+              <p class="lead fw-bold"><em>Phone Number:</em> {{ record.contact_number }}</p>
+              <p class="lead fw-bold"><em>Date of Birth:</em> {{ record.date_of_birth }}</p>
+              <p class="lead fw-bold"><em>Gender:</em> {{ record.gender }}</p>
+              <p class="lead fw-bold"><em>Disability Type:</em> {{ record.disability_name }}</p>
+              <p class="lead fw-bold"><em>Address:</em> {{ record.address }}</p>
+              <p class="lead fw-bold"><em>Contact Number:</em> {{ record.contact_number }}</p>
+              <p class="lead fw-bold"><em>Emergency Contact Name:</em> {{ record.emergency_contact_name }}</p>
+              <p class="lead fw-bold"><em>Emergency Phone:</em> {{ record.emergency_phone }}</p>
+              <p class="lead fw-bold"><em>Verified?</em> {{ record.is_verified }}</p>
+              <p class="lead fw-bold"><em>Registration Date:</em> {{ record.registration_date }}</p>
+          </div>
+        </div>
+      </div>
 
       <p v-else-if="!loading && searchQuery">No records found.</p>
       <p v-if="loading">Loading...</p>

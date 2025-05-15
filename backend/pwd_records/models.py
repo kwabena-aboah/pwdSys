@@ -20,7 +20,6 @@ def upload_image_path(instance, filename):
 GENDER = [
 	('male', 'Male'),
 	('female', 'Female'),
-	('other', 'Other'),
 ]
 
 APPLICATION_STATUS = [

@@ -41,24 +41,26 @@
             </div>
             <hr>
             <br>
-            <div class="filters">
-                <label class="form-label">
-                    From:
-                    <input type="date" v-model="filters.startDate" name="startDate" class="form-control">
-                </label>
-                <label class="form-label">
-                    To:
-                    <input type="date" v-model="filters.endDate" name="endDate" class="form-control">
-                </label>
-            </div>
-            <div class="chart-grid">
-                <PWDCountChart :filters="filters" />
-                <VerifiedPWDChart :filters='filters' />
-            </div>
-            <hr>
-            <br>
             <div class="container-fluid">
-                <PWDByDisabilityChart :filters='filters' />
+                <div class="filters">
+                    <label class="form-label">
+                        From:
+                        <input type="date" v-model="filters.startDate" name="startDate" class="form-control">
+                    </label>
+                    <label class="form-label">
+                        To:
+                        <input type="date" v-model="filters.endDate" name="endDate" class="form-control">
+                    </label>
+                </div>
+                <div class="chart-grid">
+                    <PWDCountChart :filters="filters" />
+                    <VerifiedPWDChart :filters='filters' />
+                </div>
+                <hr>
+                <br>
+                <div class="container-fluid">
+                    <PWDByDisabilityChart :filters='filters' />
+                </div>
             </div>
         </main>
     </div>

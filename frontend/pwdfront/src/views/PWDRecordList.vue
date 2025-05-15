@@ -44,7 +44,7 @@
                                         <option value="" disabled>Select gender</option>
                                         <option value="male">Male</option>
                                         <option value="female">Female</option>
-                                        <option value="other">Other</option>
+                                        <!-- <option value="other">Other</option> -->
                                     </select>
                                 </div>
                                 <div class="mb-3">
@@ -117,16 +117,16 @@
              <div class="container-fluid">
                  <div class="row mb-3">
                      <div class="col-sm-12 col-md-4 col-lg-4">
-                       <input type="text" name="search" class="form-control" v-model="searchQuery" placeholder="Search name or contact number..." @input="this.fetchRecords(1)">
+                       <input type="text" name="search" class="form-control" v-model="searchQuery" placeholder="Search name or contact number..." @input="this.updateRouteQuery()">
                    </div>
                    <div class="col-sm-12 col-md-4 col-lg-4">
-                       <select v-model="ordering" @change="this.fetchRecords(1)" class="form-select">
+                       <select v-model="ordering" @change="this.updateRouteQuery()" class="form-select">
                          <option value="registration_date">Registration Date (Asc)</option>
                          <option value="-registration_date">Registration Date (Desc)</option>
                        </select>
                    </div>
                    <div class="col-sm-12 col-md-4 col-lg-4">
-                       <select v-model="filters.is_verified" @change="this.fetchRecords(1)" class="form-select">
+                       <select v-model="filters.is_verified" @change="this.updateRouteQuery()" class="form-select">
                          <option value="">All Verification Status</option>
                          <option :value="true">Verified</option>
                          <option :value="false">Not Verified</option>
@@ -134,15 +134,32 @@
                    </div>
                  </div>
              </div>
+
+             <!-- Export options -->
+             <div class="container-fluid">
+               <div class="row mb-3">
+                 <div class="col-sm-12 col-md-1 col-lg-1">
+                   <div class="text-end">
+                     <button class="btn btn-outline-primary me-2" @click="exportRecords('csv')">Export CSV</button>
+                   </div>
+                 </div>
+                 <div class="col-sm-12 col-md-1 col-lg-1">
+                   <div>
+                     <button class="btn btn-outline-danger mb-3" @click="exportToPDF()">Export PDF</button>
+                   </div>
+                 </div>
+               </div>
+             </div>
              
              <!-- PWDRecords list -->
              <div class="table-responsive">
                <table class="table table-striped">
                   <thead>
                     <tr>
-                      <th>Full Name</th>
+                      <th>#.Full Name</th>
                       <th>Disability Type</th>
                       <th>Gender</th>
+                      <th>ID Card</th>
                       <th>Verified?</th>
                       <th>Registration Date</th>
                       <th>Actions</th>
@@ -150,9 +167,10 @@
                   </thead>
                   <tbody v-if="this.records?.length > 0">
                     <tr v-for="record in records" :key="record.id">
-                      <td>{{ record.full_name }}</td>
+                      <td>{{ record.id }}. {{ record.full_name }}</td>
                       <td>{{ record.disability_name }}</td>
                       <td>{{ record.gender }}</td>
+                      <td><img :src="record.id_photo" :alt="record.full_name" class="rounded-circle img-fluid" style="width:50px; height:50px;"/></td>
                       <td>{{ record.is_verified }}</td>
                       <td>{{ record.registration_date }}</td>
                       <td>
@@ -216,7 +234,7 @@ export default {
           date_of_birth: "",
           gender: "",
           disability_type: "",
-          id_photo: "", // Store base64 or file object
+          id_photo: null, // Store base64 or file object
           address: "",
           contact_number: "",
           emergency_contact_name: "",
@@ -243,10 +261,38 @@ export default {
     };
   },
   created() {
-    this.fetchRecords();
+    this.loadFromQuery();
     this.fetchDisabilityType();
   },
+  watch: {
+    '$route.query': {
+      handler() {
+        this.loadFromQuery();
+      },
+      deep: true
+    }
+  },
   methods: {
+    loadFromQuery() {
+      const query = this.$route.query;
+
+      this.searchQuery = query.search || '';
+      this.ordering = query.ordering || 'registration_date';
+      this.filters.is_verified = query.is_verified ?? '';
+
+      this.fetchRecords(query.page || 1);
+    },
+    updateRouteQuery() {
+      this.$router.push({
+        path: this.$route.path,
+        query: {
+          search: this.searchQuery || undefined,
+          ordering: this.ordering || undefined,
+          is_verified: this.filters.is_verified !== '' ? this.filters.is_verified : undefined,
+          page: 1,
+        },
+      });
+    },
     async fetchRecords(page = 1) {
       try {
         this.loading = true;
@@ -278,9 +324,12 @@ export default {
       }
     },
     changePage(url) {
-        if (url) {
-            this.fetchRecords(url);
-        }
+        if (!url) return;
+        const pageParam = new URLSearchParams(url.split('?')[1]).get('page');
+        this.$router.push({
+          path: this.$route.path,
+          query: { ...this.$route.query, pageParam },
+        });
     },
     async fetchDisabilityType() {
        if(this.form.disability_type.length < 2) {
@@ -352,8 +401,12 @@ export default {
     },
     handleFileChange(event){
       const file = event.target.files[0];
-      if (file) {
-        this.form.id_photo = file // store the file object
+        if (file && file.type.startsWith("image/")){
+          this.form.id_photo = file; // store the file object
+          return;
+        } else {
+        toast.warn("Only image files are allowed (e.g., PNG, JPG, etc.)");
+        this.form.id_photo = null;
         this.convertToBase64(file);
       }
     },
@@ -402,7 +455,6 @@ export default {
         const response = await instance.post("/pwd_records/", formData, {
             headers: {
             'Authorization': `Bearer ${this.$store.state.accessToken}`,
-            'Content-Type': 'multipart/form-data',
             }
         });
         this.records = response.data; // Add new record to the  list
@@ -470,6 +522,64 @@ export default {
   closeModal() {
       const modal = Modal.getInstance(document.getElementById('PWDModal'));
       modal.hide();
+  },
+  exportRecords(format) {
+    const query = { ...this.$route.query };
+    const queryString = new URLSearchParams(query).toString();
+
+    const url = `/pwd/export/?${queryString}`;
+
+    const token = this.$store.state.accessToken;
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.setAttribute('target', '_blank');
+    anchor.setAttribute('download', `pwd_records.${format}`);
+    anchor.setAttribute('Authorization', `Bearer ${token}`);
+
+    // To actually include the token in headers, use fetch
+    instance.get(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      responseType: 'blob'
+    })
+    // .then(res => res.blob())
+    .then(res => {
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(new Blob([res.data]));
+      link.setAttribute('download', `pwd_records.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    })
+    .catch(error => 
+      toast.error("Export failed", error)
+      // console.error(error)
+      );
+  },
+  async exportToPDF() {
+    try {
+      const params = new URLSearchParams();
+
+      if (this.searchQuery) params.append('search', this.searchQuery);
+      if(this.filters.is_verified !== '') params.append('is_verified', this.filters.is_verified);
+
+      const response = await instance.get(`/pwd/export/pdf/?${params.toString()}`, {
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'PWD_Records_Report.pdf');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error('Failed to export PDF');
+    }
   },
 },
 }

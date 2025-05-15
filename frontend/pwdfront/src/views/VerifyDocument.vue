@@ -11,6 +11,10 @@
             </nav>
 
             <div class="container mt-5">
+                <div class="p-5 mb-4 bg-light rounded-3 text-center">
+                    <h1 class="display-4 fw-bold">Important Information!</h1>
+                    <p class="lead">Please check the ID of the record at the PWD Records page / Medical Certificate page if you want to verify an ID Card / Certificate</p>
+                </div>
                 <form @submit.prevent="verifyDocument">
                     <div class="mb-3">
                         <label class="form-label">Document Type</label>
@@ -27,12 +31,10 @@
                     <button class="btn btn-primary">Verify</button>
                 </form>
             </div>
-            <br>
-            <hr>
-            <div v-if="result">
-                <div class="mt-2">
-                    <h5>Extracted Text:</h5>
-                    <pre>{{ result.text_extracted }}</pre>
+            <div v-if="result" class="container mt-5">
+                <div class="p-5 mb-4 bg-light rounded-4 text-center">
+                    <h5 class="display-4 fw-bold">Extracted Text:</h5>
+                    <pre class="lead">{{ result.text_extracted }}</pre>
                 </div>
             </div>
         </main>

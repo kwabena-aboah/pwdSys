@@ -1,23 +1,50 @@
 <template>
-    <main class="form-signin text-center">
-        <form @submit.prevent="loginUser">
-            <img src="@/assets/logo.jpeg" class="mb-4" alt="logo.jpeg" width="280" height="100">
-            <div class="form-floating">
-                <input v-model="form.username" type="text" class="form-control" id="username" placeholder="Username" required />
-                <label for="username" class="form-label">Username</label>
+    <main class="container-fluid vh-100">
+        <div class="row h-100">
+          <!-- Banner Section -->
+          <div class="col-lg-6 d-none d-lg-flex align-items-center justify-content-center bg-dark text-white">
+            <img src="@/assets/banner.jpeg" alt="Login Logo" class="img-fluid rounded shadow" />
+          </div>
+
+          <!-- Login Form Section -->
+          <div class="col-lg-6 d-flex align-items-center justify-content-center bg-light">
+            <div class="card shadow-lg p-4" style="min-width: 350px; max-width: 400px; width: 100%">
+              <div class="card-body">
+                <h3 class="card-title text-center mb-4">Sign In</h3>
+                <form @submit.prevent="loginUser">
+                  <!-- Username -->
+                    <div class="mb-3">
+                        <input v-model="form.username" type="text" class="form-control" id="username" placeholder="Enter username" required />
+                        <label for="username" class="form-label">Username</label>
+                    </div>
+                    <!-- Password -->
+                    <div class="mb-3 position-relative">
+                        <input v-model="form.password" :type="showPassword ? 'text' : 'password'" class="form-control" id="password" placeholder="Enter password" required />
+                        <label for="password" class="form-label">Password</label>
+                        <!-- Toggle password -->
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-secondary position-absolute top-25 end-0 translate-middle-y me-2" @click="togglePassword">
+                          {{ showPassword ? 'Hide' : 'Show' }}
+                        </button>
+                    </div>
+                    <!-- Submit button -->
+                    <div class="d-grid mt-4">
+                      <button type="submit" class="w-100 btn btn-lg btn-primary">Sign in</button>
+                    </div>
+                    <!-- Additional links -->
+                    <div class="text-center mt-3">
+                        <a href="#" class="text-decoration-none">Forgot Password?</a>
+                        <br>
+                        <span class="text-muted">Don't have an account?</span>
+                        <a href="#" class="text-decoration-none">Register</a>
+                    </div>
+                </form>
+                <!-- <p class="mt-5 mb-3 text-muted">&copy; 2025–2026</p> -->
+              </div>
             </div>
-            <div class="form-floating">
-                <input v-model="form.password" type="password" class="form-control" id="password" placeholder="Password" required />
-                <label for="password" class="form-label">Password</label>
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Sign in</button>
-            <hr>
-            <!-- <div class="checkbox mb-3">
-                <p class="mt-5 mb-3 text-muted">Don't have an account? Click on the "Register" button below.</p>
-              <router-link to="/register"  class="w-100 btn btn-lg btn-default shadow">Register</router-link>
-            </div> -->
-        </form>
-        <p class="mt-5 mb-3 text-muted">&copy; 2025–2026</p>
+          </div>
+        </div>
     </main>
 </template>
 
@@ -35,10 +62,14 @@ export default {
                 username: "",
                 password: "",
             },
+            showPassword: false,
         };
     },
     methods: {
         ...mapActions(["saveTokens"]),
+        togglePassword() {
+          this.showPassword = !this.showPassword;
+        },
         async loginUser() {
             try {
                 const response = await instance.post("/token/", this.form);
@@ -59,43 +90,16 @@ export default {
 </script>
 
 <style scoped>
-html,
-body {
-  height: 100%;
+.card {
+  border-radius: 10px;
 }
 
-body {
-  display: flex;
-  align-items: center;
-  padding-top: 40px;
-  padding-bottom: 40px;
-  background-color: #8b8b8b;
+.top-25 {
+  top: 25%;
 }
-
-.form-signin {
-  width: 100%;
-  max-width: 330px;
-  padding: 15px;
-  margin: auto;
-}
-
-.form-signin .checkbox {
-  font-weight: 400;
-}
-
-.form-signin .form-floating:focus-within {
-  z-index: 2;
-}
-
-.form-signin input[type="email"] {
-  margin-bottom: -1px;
-  border-bottom-right-radius: 0;
-  border-bottom-left-radius: 0;
-}
-
-.form-signin input[type="password"] {
-  margin-bottom: 10px;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+@media (max-width: 991.98px) {
+  .row {
+    flex-direction: column;
+  }
 }
 </style>

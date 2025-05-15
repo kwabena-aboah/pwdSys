@@ -194,7 +194,6 @@ export default {
                 const response = await instance.put(`/disability_type/${this.form.id}/`, this.form, {
                     headers: {
                     'Authorization': `Bearer ${this.$store.state.accessToken}`,
-                    'Content-Type': 'application/json',
                     }
                 });
                 this.disabilityType = response.data;

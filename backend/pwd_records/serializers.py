@@ -53,7 +53,9 @@ class ServiceTypeSerializer(serializers.ModelSerializer):
 class PWDRecordSerializer(serializers.ModelSerializer):
     # user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True)
     disability_name = serializers.CharField(source='disability_type.disability_type', read_only=True)
-    id_photo = serializers.SerializerMethodField()
+    id_photo = Base64ImageField(
+        max_length=None, use_url=True, required=False, allow_null=True
+    )
     class Meta:
         model = PWDRecord
         fields = [
@@ -71,16 +73,14 @@ class PWDRecordSerializer(serializers.ModelSerializer):
     def validate_date_of_birth(self, value):
         return value if value else None
 
-    def validate_id_photo(self, value):
-        """Ensure file is properly handled"""
-        if isinstance(value, str) and value.startswith("data:image"):
-            format, imgstr = value.split.split(";base64")
-            ext = format.split("/")[-1]
-
-            img_data = base64.b64decode(imgstr)
-
-            return ContentFile(img_data, name=f"{uuid.uuid4()}.{ext}")
-        return value
+    # def validate_id_photo(self, value):
+    #     """Ensure file is properly handled"""
+    #     if value:
+    #         try:
+    #             base64.b64decode(value, validate=True)
+    #         except binascii.Error:
+    #             raise serializers.ValidationError("Invalid file format. Ensure the image is properly encoded.")
+    #         return value
 
     def create(self, validated_data):
         request = self.context.get('request')
@@ -91,16 +91,17 @@ class PWDRecordSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
     def get_id_photo(self, obj):
-        # request = self.context.get('request')
+        request = self.context.get('request')
         if obj.id_photo:
-            return obj.id_photo.url
+            return request.build_absolute_uri(obj.id_photo.url)
         return None
 
     def update(self, instance, validated_data):
-        # Prevent overwriting the existing file if no new id_photo is uploaded
-        if 'id_photo' in validated_data:
-            if validated_data['id_photo'] is None:
-                validated_data.pop('id_photo')
+        # Prevent overwriting the existing file if no new picture is uploaded
+        id_photo = validated_data.get('id_photo', None)
+
+        if not id_photo:
+            validated_data.pop('id_photo', None)
         return super().update(instance, validated_data)
 
 class CertificateSerializer(serializers.ModelSerializer):
