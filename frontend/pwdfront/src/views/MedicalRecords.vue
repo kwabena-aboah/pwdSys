@@ -80,6 +80,21 @@
                 </div>
              </div>
 
+             <!-- Search filter & Ordering -->
+             <div class="container-fluid">
+                 <div class="row mb-3">
+                     <div class="col-sm-12 col-md-8 col-lg-8">
+                       <input type="text" name="search" class="form-control" v-model="searchQuery" placeholder="Search doctor's name..." @input="this.updateRouteQuery()">
+                   </div>
+                   <div class="col-sm-12 col-md-4 col-lg-4">
+                       <select v-model="ordering" @change="this.updateRouteQuery()" class="form-select">
+                         <option value="last_checkup_date">Last Checkup Date (Asc)</option>
+                         <option value="-last_checkup_date">Last Checkup Date (Desc)</option>
+                       </select>
+                   </div>
+                 </div>
+             </div>
+
             <!-- Service Type list -->
             <div class="table-responsive">
                 <table class="table table-striped table-hover">
@@ -165,8 +180,11 @@ export default {
             },
             page: 1,
             suggestions: [],
+            searchQuery: "",
+            ordering: "last_checkup_date",
             activeIndex: -1,
             isFocused: false,
+            loading: false,
             selectedPWD: null,
             debouceTimeout: null,
             modalTitle: '',
@@ -177,9 +195,36 @@ export default {
             },
         };
     },
+    watch: {
+        '$route.query': {
+          handler() {
+            this.loadFromQuery();
+          },
+          deep: true
+        }
+      },
     methods: {
-        async fetchMedicalRecords(url = `/medical_records/?page=${this.page}`) {
+        loadFromQuery() {
+          const query = this.$route.query;
+
+          this.searchQuery = query.search || '';
+          this.ordering = query.ordering || 'last_checkup_date';
+          this.fetchMedicalRecords(query.page || 1);
+        },
+        updateRouteQuery() {
+          this.$router.push({
+            path: this.$route.path,
+            query: {
+              search: this.searchQuery || undefined,
+              ordering: this.ordering || undefined,
+              page: 1,
+            },
+          });
+        },
+        async fetchMedicalRecords(page = this.page) {
             try {
+                this.loading = true;
+                let url = `/medical_records/?search=${this.searchQuery}&page=${page}&ordering=${this.ordering}`;
                 const response = await instance.get(url, {
                     headers: {
                     'Authorization': `Bearer ${this.$store.state.accessToken}`,
@@ -192,12 +237,17 @@ export default {
             } catch (error) {
                 toast.error("Error fetching Medical Records!");
                 console.error("Error fetching Medical Records:", error);
+            } finally {
+                this.loading = false;
             }
         },
         changePage(url) {
-            if (url) {
-                this.fetchMedicalRecords(url);
-            }
+            if (!url) return;
+            const pageParam = new URLSearchParams(url.split('?')[1]).get('page');
+            this.$router.push({
+              path: this.$route.path,
+              query: { ...this.$route.query, pageParam },
+            });
         },
         async fetchRecords() {
           if(this.form.pwd_id.length < 2) {
@@ -352,7 +402,7 @@ export default {
         },
     },
     created() {
-        this.fetchMedicalRecords();
+        this.loadFromQuery();
         this.fetchRecords();
     },
 };

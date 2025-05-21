@@ -78,6 +78,7 @@
                 <table class="table table-striped table-hover">
                     <thead>
                         <tr>
+                            <th>#</th>
                             <th>PWD Name</th>
                             <th>Medical Certificate</th>
                             <th>Created Date</th>

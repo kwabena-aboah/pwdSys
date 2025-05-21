@@ -244,7 +244,9 @@ class CertificateViewSet(viewsets.ModelViewSet):
 class MedicalRecordsViewSet(viewsets.ModelViewSet):
     queryset = MedicalRecords.objects.all()
     serializer_class = MedicalRecordsSerializer
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['doctor_name']
+    ordering = ['last_checkup_date']
     permission_classes = (IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer)
     parser_classes = (MultiPartParser, FormParser)
 

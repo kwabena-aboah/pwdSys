@@ -193,14 +193,14 @@
                     <li 
                         class="page-item"
                         :class="{ disabled: !pagination.prev }"
-                        @click="changePage(pagination.prev)">
-                        <a href="#" class="page-link">Previous</a>
+                        >
+                        <a href="#" class="page-link" @click.prevent="changePage(pagination.prev)">Previous</a>
                     </li>
                     <li 
                         class="page-item"
                         :class="{ disabled: !pagination.next }"
-                        @click="changePage(pagination.next)">
-                        <a href="#" class="page-link">Next</a>
+                        >
+                        <a href="#" class="page-link" @click.prevent="changePage(pagination.next)">Next</a>
                     </li>
                 </ul>
                </nav>
@@ -252,6 +252,7 @@ export default {
       selectedDisability: null,
       debouceTimeout: null,
       loading: false,
+      page: 1,
       modalTitle: '',
       modalAction: '',
       pagination: {
@@ -269,7 +270,8 @@ export default {
       handler() {
         this.loadFromQuery();
       },
-      deep: true
+      // deep: true,
+      immediate: true,
     }
   },
   methods: {
@@ -293,7 +295,7 @@ export default {
         },
       });
     },
-    async fetchRecords(page = 1) {
+    async fetchRecords(page = this.page) {
       try {
         this.loading = true;
 
@@ -326,9 +328,10 @@ export default {
     changePage(url) {
         if (!url) return;
         const pageParam = new URLSearchParams(url.split('?')[1]).get('page');
+        if (!pageParam || pageParam === this.$route.query.page) return;
         this.$router.push({
           path: this.$route.path,
-          query: { ...this.$route.query, pageParam },
+          query: { ...this.$route.query, page: pageParam },
         });
     },
     async fetchDisabilityType() {
