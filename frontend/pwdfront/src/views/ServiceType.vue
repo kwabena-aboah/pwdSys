@@ -47,6 +47,21 @@
                 </div>
              </div>
 
+             <!-- Search filter & Ordering -->
+             <div class="container-fluid">
+                 <div class="row mb-3">
+                     <div class="col-sm-12 col-md-8 col-lg-8">
+                       <input type="text" name="search" class="form-control" v-model="searchQuery" placeholder="Search service name..." @input="this.updateRouteQuery()">
+                   </div>
+                   <div class="col-sm-12 col-md-4 col-lg-4">
+                       <select v-model="ordering" @change="this.updateRouteQuery()" class="form-select">
+                         <option value="created_on">Created Date (Asc)</option>
+                         <option value="-created_on">Created Date (Desc)</option>
+                       </select>
+                   </div>
+                 </div>
+             </div>
+
             <!-- Service Type list -->
             <div class="table-responsive">
                 <table class="table table-striped table-hover">
@@ -85,14 +100,14 @@
                     <li 
                         class="page-item"
                         :class="{ disabled: !pagination.prev }"
-                        @click="changePage(pagination.prev)">
-                        <a href="#" class="page-link">Previous</a>
+                        >
+                        <a href="#" class="page-link" @click.prevent="changePage(pagination.prev)">Previous</a>
                     </li>
                     <li 
                         class="page-item"
                         :class="{ disabled: !pagination.next }"
-                        @click="changePage(pagination.next)">
-                        <a href="#" class="page-link">Next</a>
+                        >
+                        <a href="#" class="page-link" @click.prevent="changePage(pagination.next)">Next</a>
                     </li>
                 </ul>
                </nav>
@@ -123,6 +138,9 @@ export default {
                 description: "",
             },
             page: 1,
+            searchQuery: "",
+            ordering: "created_on",
+            loading: false,
             modalTitle: '',
             modalAction: '',
             pagination: {
@@ -131,9 +149,39 @@ export default {
             },
         };
     },
+    watch: {
+        '$route.query': {
+          handler() {
+            this.loadFromQuery();
+          },
+          deep: true
+        }
+      },
     methods: {
-        async fetchServiceType(url = `/service_type/?page=${this.page}`) {
+        loadFromQuery() {
+          const query = this.$route.query;
+
+          this.searchQuery = query.search || '';
+          this.ordering = query.ordering || 'created_on';
+          this.fetchServiceType(query.page || 1);
+        },
+        updateRouteQuery() {
+          this.$router.push({
+            path: this.$route.path,
+            query: {
+              search: this.searchQuery || undefined,
+              ordering: this.ordering || undefined,
+              page: 1,
+            },
+          });
+        },
+        async fetchServiceType(page = this.page) {
             try {
+
+                this.loading = true;
+
+                let url = `/service_type/?search=${this.searchQuery}&page=${page}&ordering=${this.ordering}`;
+
                 const response = await instance.get(url, {
                     headers: {
                     'Authorization': `Bearer ${this.$store.state.accessToken}`,
@@ -145,13 +193,18 @@ export default {
                 console.log(response.data);
             } catch (error) {
                 toast.error("Error fetching Service Type!");
-                console.error("Error fetching Service Type:", error);
+                // console.error("Error fetching Service Type:", error);
+            } finally {
+                this.loading = false;
             }
         },
         changePage(url) {
-            if (url) {
-                this.fetchServiceType(url);
-            }
+            if (!url) return;
+            const pageParam = new URLSearchParams(url.split('?')[1]).get('page');
+            this.$router.push({
+              path: this.$route.path,
+              query: { ...this.$route.query, pageParam },
+            });
         },
         openModal(action, stype = null) {
             if (action === 'create') {

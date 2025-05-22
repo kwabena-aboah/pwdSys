@@ -85,6 +85,21 @@
                 </div>
              </div>
 
+             <!-- Search filter & Ordering -->
+             <div class="container-fluid">
+                 <div class="row mb-3">
+                     <div class="col-sm-12 col-md-8 col-lg-8">
+                       <input type="text" name="search" class="form-control" v-model="searchQuery" placeholder="Search complaints..." @input="this.updateRouteQuery()">
+                   </div>
+                   <div class="col-sm-12 col-md-4 col-lg-4">
+                       <select v-model="ordering" @change="this.updateRouteQuery()" class="form-select">
+                         <option value="reported_at">Reported Date (Asc)</option>
+                         <option value="-reported_at">Reported Date (Desc)</option>
+                       </select>
+                   </div>
+                 </div>
+             </div>
+
             <!-- Service Type list -->
             <div class="table-responsive">
                 <table class="table table-striped table-hover">
@@ -127,14 +142,14 @@
                     <li 
                         class="page-item"
                         :class="{ disabled: !pagination.prev }"
-                        @click="changePage(pagination.prev)">
-                        <a href="#" class="page-link">Previous</a>
+                        >
+                        <a href="#" class="page-link" @click.prevent="changePage(pagination.prev)">Previous</a>
                     </li>
                     <li 
                         class="page-item"
                         :class="{ disabled: !pagination.next }"
-                        @click="changePage(pagination.next)">
-                        <a href="#" class="page-link">Next</a>
+                        >
+                        <a href="#" class="page-link" @click.prevent="changePage(pagination.next)">Next</a>
                     </li>
                 </ul>
                </nav>
@@ -172,6 +187,9 @@ export default {
             page: 1,
             suggestions: [],
             activeIndex: -1,
+            searchQuery: "",
+            ordering: "reported_at",
+            loading: false,
             isFocused: false,
             selectedPWD: null,
             debouceTimeout: null,
@@ -183,9 +201,38 @@ export default {
             },
         };
     },
+    watch: {
+        '$route.query': {
+          handler() {
+            this.loadFromQuery();
+          },
+          deep: true
+        }
+      },
     methods: {
-        async fetchComplaints(url = `/complaints/?page=${this.page}`) {
+        loadFromQuery() {
+          const query = this.$route.query;
+
+          this.searchQuery = query.search || '';
+          this.ordering = query.ordering || 'reported_at';
+          this.fetchComplaints(query.page || 1);
+        },
+        updateRouteQuery() {
+          this.$router.push({
+            path: this.$route.path,
+            query: {
+              search: this.searchQuery || undefined,
+              ordering: this.ordering || undefined,
+              page: 1,
+            },
+          });
+        },
+        async fetchComplaints(page = this.page) {
             try {
+                this.loading = true;
+
+                let url = `/complaints/?search=${this.searchQuery}&page=${page}&ordering=${this.ordering}`;
+
                 const response = await instance.get(url, {
                     headers: {
                     'Authorization': `Bearer ${this.$store.state.accessToken}`,
@@ -198,12 +245,17 @@ export default {
             } catch (error) {
                 toast.error("Error fetching Complaints!");
                 console.error("Error fetching Complaints:", error);
+            } finally {
+                this.loading = false;
             }
         },
         changePage(url) {
-            if (url) {
-                this.fetchComplaints(url);
-            }
+            if (!url) return;
+            const pageParam = new URLSearchParams(url.split('?')[1]).get('page');
+            this.$router.push({
+              path: this.$route.path,
+              query: { ...this.$route.query, pageParam },
+            });
         },
         async fetchRecords() {
           if(this.form.pwd_id.length < 2) {

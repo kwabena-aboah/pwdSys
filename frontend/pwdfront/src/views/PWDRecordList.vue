@@ -270,8 +270,8 @@ export default {
       handler() {
         this.loadFromQuery();
       },
-      // deep: true,
-      immediate: true,
+      deep: true,
+      // immediate: true,
     }
   },
   methods: {

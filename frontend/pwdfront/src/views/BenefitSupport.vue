@@ -103,6 +103,21 @@
                 </div>
              </div>
 
+             <!-- Search filter & Ordering -->
+             <div class="container-fluid">
+                 <div class="row mb-3">
+                     <div class="col-sm-12 col-md-8 col-lg-8">
+                       <input type="text" name="search" class="form-control" v-model="searchQ" placeholder="Search beneficiary..." @input="this.updateRouteQuery()">
+                   </div>
+                   <div class="col-sm-12 col-md-4 col-lg-4">
+                       <select v-model="ordering" @change="this.updateRouteQuery()" class="form-select">
+                         <option value="approval_date">Approval Date (Asc)</option>
+                         <option value="-approval_date">Approval Date (Desc)</option>
+                       </select>
+                   </div>
+                 </div>
+             </div>
+
             <!-- Beneficiary Support list -->
               <div class="table-responsive">
                 <table class="table table-striped table-hover">
@@ -143,14 +158,14 @@
                     <li 
                         class="page-item"
                         :class="{ disabled: !pagination.prev }"
-                        @click="changePage(pagination.prev)">
-                        <a href="#" class="page-link">Previous</a>
+                        >
+                        <a href="#" class="page-link" @click.prevent="changePage(pagination.prev)">Previous</a>
                     </li>
                     <li 
                         class="page-item"
                         :class="{ disabled: !pagination.next }"
-                        @click="changePage(pagination.next)">
-                        <a href="#" class="page-link">Next</a>
+                        >
+                        <a href="#" class="page-link" @click.prevent="changePage(pagination.next)">Next</a>
                     </li>
                 </ul>
                </nav>
@@ -186,6 +201,9 @@ export default {
             searchQuery: [],
             activeIndex: -1,
             isFocused: false,
+            searchQ: "",
+            ordering: "approval_date",
+            loading: false,
             selectedDisability: null,
             debouceTimeout: null,
             page: 1,
@@ -197,9 +215,38 @@ export default {
           },
         };
     },
+    watch: {
+        '$route.query': {
+          handler() {
+            this.loadFromQuery();
+          },
+          deep: true
+        }
+      },
     methods: {
-        async fetchBeneficiarySupport(url = `/support_services/?page=${this.page}`) {
+      loadFromQuery() {
+          const query = this.$route.query;
+
+          this.searchQ = query.search || '';
+          this.ordering = query.ordering || 'approval_date';
+          this.fetchBeneficiarySupport(query.page || 1);
+        },
+        updateRouteQuery() {
+          this.$router.push({
+            path: this.$route.path,
+            query: {
+              search: this.searchQ || undefined,
+              ordering: this.ordering || undefined,
+              page: 1,
+            },
+          });
+        },
+        async fetchBeneficiarySupport(page = this.page) {
             try {
+              this.loading = true;
+
+                let url = `/support_services/?search=${this.searchQ}&page=${page}&ordering=${this.ordering}`;
+
                 const response = await instance.get(url, {
                     headers: {
                     'Authorization': `Bearer ${this.$store.state.accessToken}`,
@@ -212,12 +259,17 @@ export default {
             } catch (error) {
                 toast.error("Error fetching Beneficiary!");
                 console.error("Error fetching Beneficiary:", error);
+            } finally {
+                this.loading = false;
             }
         },
         changePage(url) {
-            if (url) {
-                this.fetchBeneficiarySupport(url);
-            }
+            if (!url) return;
+            const pageParam = new URLSearchParams(url.split('?')[1]).get('page');
+            this.$router.push({
+              path: this.$route.path,
+              query: { ...this.$route.query, pageParam },
+            });
         },
         openModal(action, bensup = null) {
           if (action === 'create') {

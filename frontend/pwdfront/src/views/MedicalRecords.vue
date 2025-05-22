@@ -84,7 +84,7 @@
              <div class="container-fluid">
                  <div class="row mb-3">
                      <div class="col-sm-12 col-md-8 col-lg-8">
-                       <input type="text" name="search" class="form-control" v-model="searchQuery" placeholder="Search doctor's name..." @input="this.updateRouteQuery()">
+                       <input type="text" name="search" class="form-control" v-model="searchQuery" placeholder="Search medical record..." @input="this.updateRouteQuery()">
                    </div>
                    <div class="col-sm-12 col-md-4 col-lg-4">
                        <select v-model="ordering" @change="this.updateRouteQuery()" class="form-select">
@@ -137,14 +137,14 @@
                     <li 
                         class="page-item"
                         :class="{ disabled: !pagination.prev }"
-                        @click="changePage(pagination.prev)">
-                        <a href="#" class="page-link">Previous</a>
+                        >
+                        <a href="#" class="page-link" @click.prevent="changePage(pagination.prev)">Previous</a>
                     </li>
                     <li 
                         class="page-item"
                         :class="{ disabled: !pagination.next }"
-                        @click="changePage(pagination.next)">
-                        <a href="#" class="page-link">Next</a>
+                        >
+                        <a href="#" class="page-link" @click.prevent="changePage(pagination.next)">Next</a>
                     </li>
                 </ul>
                </nav>

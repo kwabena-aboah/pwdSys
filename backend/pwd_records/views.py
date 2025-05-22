@@ -34,7 +34,13 @@ class ModelPagination(LimitOffsetPagination):
 class DisabilityTypeViewSet(viewsets.ModelViewSet):
     queryset = DisabilityType.objects.all()
     serializer_class = DisabilityTypeSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['disability_type']
+    ordering = ['created_on']
     permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        return DisabilityType.objects.filter()
 
     def get(self, request, *args, **kwargs):
         paginator = ModelPagination
@@ -46,7 +52,13 @@ class DisabilityTypeViewSet(viewsets.ModelViewSet):
 class ServiceTypeViewSet(viewsets.ModelViewSet):
     queryset = ServiceType.objects.all()
     serializer_class = ServiceTypeSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['service_name']
+    ordering = ['created_on']
     permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        return ServiceType.objects.filter()
 
     def get(self, request, *args, **kwargs):
         paginator = ModelPagination
@@ -212,7 +224,9 @@ def export_pwd_pdf(request):
 class CertificateViewSet(viewsets.ModelViewSet):
     queryset = Certificate.objects.all()
     serializer_class = CertificateSerializer
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['pwd_id__full_name']
+    ordering = ['created_at']
     permission_classes = (IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer)
     parser_classes = (MultiPartParser, FormParser)
 
@@ -245,7 +259,7 @@ class MedicalRecordsViewSet(viewsets.ModelViewSet):
     queryset = MedicalRecords.objects.all()
     serializer_class = MedicalRecordsSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['doctor_name']
+    search_fields = ['pwd_id__full_name']
     ordering = ['last_checkup_date']
     permission_classes = (IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer)
     parser_classes = (MultiPartParser, FormParser)
@@ -265,7 +279,9 @@ class MedicalRecordsViewSet(viewsets.ModelViewSet):
 class SupportServicesViewSet(viewsets.ModelViewSet):
     queryset = SupportServices.objects.all()
     serializer_class = SupportServicesSerializer
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['pwd_id__full_name']
+    ordering = ['approval_date']
     permission_classes = (IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer)
 
     def get_queryset(self):
@@ -283,7 +299,9 @@ class SupportServicesViewSet(viewsets.ModelViewSet):
 class ComplaintsViewSet(viewsets.ModelViewSet):
     queryset = Complaints.objects.all()
     serializer_class = ComplaintsSerializer
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['pwd_id__full_name']
+    ordering = ['reported_at']
     permission_classes = (IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer)
 
     def get_queryset(self):
