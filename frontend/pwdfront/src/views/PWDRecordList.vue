@@ -152,7 +152,7 @@
              </div>
              
              <!-- PWDRecords list -->
-             <div class="table-responsive">
+             <div class="table  table-striped table-responsive">
                <table class="table table-striped">
                   <thead>
                     <tr>
@@ -188,19 +188,19 @@
              </div>
 
               <!-- Pagination controls -->
-               <nav aria-label="Page navigation">
+               <nav aria-label="Page navigation" v-if="pagination.prev || pagination.next">
                 <ul class="pagination justify-content-center">
                     <li 
                         class="page-item"
                         :class="{ disabled: !pagination.prev }"
                         >
-                        <a href="#" class="page-link" @click.prevent="changePage(pagination.prev)">Previous</a>
+                        <a href="#" class="page-link" @click.prevent="() => changePage(pagination.prev)">Previous</a>
                     </li>
                     <li 
                         class="page-item"
                         :class="{ disabled: !pagination.next }"
                         >
-                        <a href="#" class="page-link" @click.prevent="changePage(pagination.next)">Next</a>
+                        <a href="#" class="page-link" @click.prevent="() => changePage(pagination.next)">Next</a>
                     </li>
                 </ul>
                </nav>
@@ -252,7 +252,7 @@ export default {
       selectedDisability: null,
       debouceTimeout: null,
       loading: false,
-      page: 1,
+      currentPage: 1,
       modalTitle: '',
       modalAction: '',
       pagination: {
@@ -271,7 +271,7 @@ export default {
         this.loadFromQuery();
       },
       deep: true,
-      // immediate: true,
+      immediate: true,
     }
   },
   methods: {
@@ -282,7 +282,12 @@ export default {
       this.ordering = query.ordering || 'registration_date';
       this.filters.is_verified = query.is_verified ?? '';
 
-      this.fetchRecords(query.page || 1);
+      const currentPage = parseInt(query.page) || 1;
+      this.currentPage = currentPage;
+
+      this.fetchRecords(currentPage);
+
+      console.log("Route changed to page:", this.$route.query.page);
     },
     updateRouteQuery() {
       this.$router.push({
@@ -295,7 +300,7 @@ export default {
         },
       });
     },
-    async fetchRecords(page = this.page) {
+    async fetchRecords(page = 1) {
       try {
         this.loading = true;
 
@@ -327,8 +332,8 @@ export default {
     },
     changePage(url) {
         if (!url) return;
-        const pageParam = new URLSearchParams(url.split('?')[1]).get('page');
-        if (!pageParam || pageParam === this.$route.query.page) return;
+        const pageParam = new URL(url, window.location.origin).searchParams.get('page');
+        if (pageParam  === this.$route.query.page) return;
         this.$router.push({
           path: this.$route.path,
           query: { ...this.$route.query, page: pageParam },

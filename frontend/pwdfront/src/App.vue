@@ -29,4 +29,7 @@ body {
       font-size: 3.5rem;
     }
 }
+.sidebar .collapsed {
+  width: 70px;
+}
 </style>
