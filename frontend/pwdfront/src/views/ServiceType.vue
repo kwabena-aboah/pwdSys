@@ -79,7 +79,7 @@
                             <td>{{ stype.id }}</td>
                             <td>{{ stype.service_name }}</td>
                             <td>{{ stype.description }}</td>
-                            <td>{{ stype.created_on }}</td>
+                            <td>{{ formatDate(stype.created_on) }}</td>
                             <td>
                                 <button class="btn btn-sm btn-warning me-2" @click="openModal('edit', stype)">Edit</button>
                                 <button class="btn btn-sm btn-danger" @click="deleteServiceType(stype.id)">Delete</button>
@@ -276,6 +276,16 @@ export default {
             const modal = Modal.getInstance(document.getElementById('serviceTypeModal'));
             modal.hide();
         },
+        formatDate(dateStr){
+            const d = new Date(dateStr)
+            return d.toLocaleString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          },
     },
     created() {
         this.fetchServiceType();

@@ -49,28 +49,18 @@
                                 </div>
                                 <div class="mb-3">
                                   <label for="disability_type" class="form-label">Disability Type</label>
-                                  <div class="autocomplete-container" @keydown.down.prevent="moveDown" @keydown.up.prevent="moveUp" @keydown.enter.prevent="selectActive">
-                                    <input
-                                      type="text"
-                                      v-model="form.disability_type"
-                                      @input="debouncedFetchSuggestions"
-                                      placeholder="Start typing a disability type..."
-                                      @focus="isFocused = true"
-                                      @blur="hideSuggestionsWithDelay"
-                                      autocomplete="off"
-                                      class="form-control"
-                                      />
-                                      <ul v-if="isFocused && suggestions.length && form.disability_type" class="ul">
-                                        <li
-                                          v-for="(dtype, index) in suggestions"
-                                          :key="dtype.id"
-                                          :class="{ active: index === activeIndex }"
-                                          @mousedown.prevent="selectDisability(dtype)">
-                                            {{ dtype.id }}. {{ dtype.disability_type }}
-                                          </li>
-                                      </ul>
-                                      <p v-if="selectedDisability">Selected: {{ selectedDisability.disability_type }}</p>
-                                  </div>
+                                  <Multiselect
+                                    v-model="form.disability_type"
+                                    :options="suggestions"
+                                    label="disability_name"
+                                    value-prop="id"
+                                    track-by="id"
+                                    searchable
+                                    :filter-results="false"
+                                    @search-change="fetchDisabilityType"
+                                    placeholder="Search disability type..."
+                                    class="form-control p-0"
+                                    />
                                 </div>
                                 <div class="mb-3">
                                   <label for="id_photo" class="form-label">Select Passport Picture</label>
@@ -84,6 +74,18 @@
                               <div class="mb-3">
                                     <label for="address" class="form-label">Address</label>
                                     <input type="text" id="address" name="address" v-model="form.address" class="form-control" autocomplete="true" required />
+                                </div>
+                                <div class="mb-3">
+                                    <label for="occupation" class="form-label">Occupation</label>
+                                    <input type="text" id="occupation" name="occupation" v-model="form.occupation" class="form-control" required />
+                                </div>
+                                <div class="mb-3">
+                                    <label for="community" class="form-label">Community</label>
+                                    <input type="text" id="community" name="community" v-model="form.community" class="form-control" required />
+                                </div>
+                                <div class="mb-3">
+                                    <label for="area_council" class="form-label">Area Council</label>
+                                    <input type="text" id="area_council" name="area_council" v-model="form.area_council" class="form-control" required />
                                 </div>
                                 <div class="mb-3">
                                     <label for="contact_number" class="form-label">Contact Number</label>
@@ -148,6 +150,16 @@
                      <button class="btn btn-outline-danger mb-3" @click="exportToPDF()">Export PDF</button>
                    </div>
                  </div>
+                 <div class="col-sm-12 col-md-1 col-lg-1">
+                   <div>
+                     <button class="btn btn-outline-success me-2" @click="printSelected()">Print Selected</button>
+                   </div>
+                 </div>
+                 <div class="col-sm-12 col-md-1 col-lg-1">
+                   <div>
+                     <button class="btn btn-outline-warning me-2" @click="printAll()">Print All Records</button>
+                   </div>
+                 </div>
                </div>
              </div>
              
@@ -156,10 +168,16 @@
                <table class="table table-striped">
                   <thead>
                     <tr>
+                      <th>
+                        <input type="checkbox" name="selectedFields" @change="toggleAll" class="form-check-input">
+                      </th>
                       <th>#.Full Name</th>
                       <th>Disability Type</th>
                       <th>Gender</th>
                       <th>ID Card</th>
+                      <th>Occupation</th>
+                      <th>Community</th>
+                      <th>Area Council</th>
                       <th>Verified?</th>
                       <th>Registration Date</th>
                       <th>Actions</th>
@@ -167,21 +185,31 @@
                   </thead>
                   <tbody v-if="this.records?.length > 0">
                     <tr v-for="record in records" :key="record.id">
+                      <td>
+                        <input type="checkbox" name="selectedFields" :value="Number(record.id)" v-model="selectedIds" class="form-check-input">
+                      </td>
                       <td>{{ record.id }}. {{ record.full_name }}</td>
                       <td>{{ record.disability_name }}</td>
                       <td>{{ record.gender }}</td>
                       <td><img :src="record.id_photo" :alt="record.full_name" class="rounded-circle img-fluid" style="width:50px; height:50px;"/></td>
+                      <td>{{ record.occupation }}</td>
+                      <td>{{ record.community }}</td>
+                      <td>{{ record.area_council }}</td>
                       <td>{{ record.is_verified }}</td>
-                      <td>{{ record.registration_date }}</td>
+                      <td>{{ formatDate(record.registration_date) }}</td>
                       <td>
-                        <button class="btn btn-sm btn-warning me-2" @click="openModal('edit', record)">Edit</button>
-                        <button class="btn btn-sm btn-danger" @click="deleteRecord(record.id)">Delete</button>
+                        <button class="btn btn-sm btn-warning me-2" @click="openModal('edit', record)">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" @click="deleteRecord(record.id)">
+                          <i class="bi bi-trash"></i>
+                        </button>
                     </td>
                     </tr>
                   </tbody>
                   <tbody v-else>
                       <tr>
-                          <td colspan="7">Loading...</td>
+                          <td colspan="11">Loading...</td>
                       </tr>
                   </tbody>
                 </table>
@@ -218,11 +246,14 @@ import Navbar from "@/components/Navbar.vue"
 import Sidebar from "@/components/Sidebar.vue"
 import { toast } from "vue3-toastify";
 import "vue3-toastify/dist/index.css";
+import Multiselect from "@vueform/multiselect";
+import "@vueform/multiselect/themes/default.css";
 
 export default {
   components: {
         Navbar,
         Sidebar,
+        Multiselect,
     },
     name: 'PWDRecordList',
   data() {
@@ -235,22 +266,22 @@ export default {
           gender: "",
           disability_type: "",
           id_photo: null, // Store base64 or file object
+          occupation: "",
+          community: "",
+          area_council: "",
           address: "",
           contact_number: "",
           emergency_contact_name: "",
           emergency_phone: "",
           is_verified: false,
       },
+      selectedIds: [],
       suggestions: [],
       searchQuery: "",
       ordering: "registration_date",
       filters: {
         is_verified: "",
       },
-      activeIndex: -1,
-      isFocused: false,
-      selectedDisability: null,
-      debouceTimeout: null,
       loading: false,
       currentPage: 1,
       modalTitle: '',
@@ -263,7 +294,6 @@ export default {
   },
   created() {
     this.loadFromQuery();
-    this.fetchDisabilityType();
   },
   watch: {
     '$route.query': {
@@ -339,66 +369,85 @@ export default {
           query: { ...this.$route.query, page: pageParam },
         });
     },
-    async fetchDisabilityType() {
-       if(this.form.disability_type.length < 2) {
-        this.suggestions = []
-        this.activeIndex = -1
-        return
+    toggleAll(event) {
+        if(event.target.checked){
+            this.selectedIds = this.records.map(r => Number(r.id))
+        } else {
+            this.selectedIds = []
+        }
+    },
+    async printSelected(){
+        if(!this.selectedIds.length){
+            toast.info("Select at least one record")
+            return
+        }
+
+        try {
+            const response = await instance.post('/pwd/print-selected/', 
+            { ids: this.selectedIds },
+            { 
+              responseType: 'blob',
+              headers: {
+                  'Authorization': `Bearer ${this.$store.state.accessToken}`,
+                }, 
+              },
+            );
+            const blob = new Blob([response.data], { type: 'application/pdf' })
+            const url = window.URL.createObjectURL(blob)
+
+            const win = window.open(url)
+            win.onload = () => win.print()
+            console.log(this.selectedIds)
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to generate PDF")
+        }
+    },
+    async printAll(){
+        try {
+            const response = await instance.get('/pwd/print-all/', 
+            { 
+              responseType: 'blob',
+              headers: {
+                  'Authorization': `Bearer ${this.$store.state.accessToken}`,
+                }, 
+              },
+            );
+            const blob = new Blob([response.data], { type: 'application/pdf' })
+            const url = window.URL.createObjectURL(blob)
+
+            const win = window.open(url)
+            win.onload = () => win.print()
+            console.log(this.selectedIds)
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to generate PDF")
+        }
+    },
+    async fetchDisabilityType(query) {
+       if(!query || query.length < 2) {
+        this.suggestions = [];
+        return;
        }
        await instance.get('/disability_type/', {
             headers: {
             'Authorization': `Bearer ${this.$store.state.accessToken}`,
           },
-          params: {
-            q: this.form.disability_type,
-          }
+          params: { search: query },
         })
        .then((response) => {
-        this.suggestions = response.data.results;
-        this.activeIndex = -1;
+        this.suggestions = response.data.results ?? response.data;
        })
        .catch((error) => {
         toast.error("Error fetching disability type!");
         console.error(error)
        })
       },
-      debouncedFetchSuggestions() {
-        clearTimeout(this.debouceTimeout)
-        this.debouceTimeout = setTimeout(() => {
-          this.fetchDisabilityType()
-        }, 300)
-      },
-      selectDisability(dtype) {
-        this.form.disability_type = dtype.disability_type
-        this.selectedDisability = dtype
-        this.suggestions = []
-        this.activeIndex = -1
-      },
-      moveDown() {
-        if(this.activeIndex < this.suggestions.length - 1) {
-          this.activeIndex++
-        }
-      },
-      moveUp() {
-        if(this.activeIndex > 0) {
-          this.activeIndex--
-        }
-      },
-      selectActive() {
-        if(this.activeIndex >= 0) {
-          this.selectDisability(this.suggestions[this.activeIndex])
-        }
-      },
-      hideSuggestionsWithDelay() {
-        setTimeout(() => {
-          this.isFocused = false
-        }, 100)
-      },
     openModal(action, record = null) {
       if (action === 'create') {
           this.modalTitle = 'Add PWD Record';
           this.modalAction = 'Create';
-          this.form = { id: null, full_name: "", date_of_birth: "", gender: "", disability_type: "", id_photo: "", address: "", contact_number: "", emergency_contact_name: "", emergency_phone: "", is_verified: false, /*user: ""*/ };
+          this.form = { id: null, full_name: "", date_of_birth: "", gender: "", disability_type: "", id_photo: "", occupation: "", community: "", area_council: "", address: "", contact_number: "", emergency_contact_name: "", emergency_phone: "", is_verified: false, /*user: ""*/ };
       } else if (action === 'edit') {
           this.modalTitle = 'Edit PWD Record';
           this.modalAction = 'Update';
@@ -439,25 +488,23 @@ export default {
       try {
         let formData = new FormData();
         // Append form fields
-        formData.append('full_name', this.form.full_name);
-        formData.append('date_of_birth', this.form.date_of_birth);
-        formData.append('gender', this.form.gender);
-        formData.append('disability_type', this.form.disability_type ? this.selectedDisability.id : "");
-        formData.append('address', this.form.address);
-        formData.append('contact_number', this.form.contact_number);
-        formData.append('emergency_contact_name', this.form.emergency_contact_name);
-        formData.append('emergency_phone', this.form.emergency_phone);
-        formData.append('is_verified', this.form.is_verified);
+        formData.append('full_name', this.form.full_name || "");
+        formData.append('date_of_birth', this.form.date_of_birth || "");
+        formData.append('gender', this.form.gender || "");
+        formData.append('disability_type', this.form.disability_type || "");
+        formData.append('occupation', this.form.occupation || "");
+        formData.append('community', this.form.community || "");
+        formData.append('area_council', this.form.area_council || "");
+        formData.append('address', this.form.address || "");
+        formData.append('contact_number', this.form.contact_number || "");
+        formData.append('emergency_contact_name', this.form.emergency_contact_name || "");
+        formData.append('emergency_phone', this.form.emergency_phone || "");
+        formData.append('is_verified', this.form.is_verified || "");
         // formData.append('user', this.$store.state.user.id);
 
         // Append the image file if selected
         if (this.form.id_photo instanceof File) {
           formData.append('id_photo', this.form.id_photo);
-        }
-
-        if (!this.selectedDisability) {
-          toast.warn('Please select a disability type from suggestion')
-          return
         }
 
         const response = await instance.post("/pwd_records/", formData, {
@@ -478,25 +525,23 @@ export default {
       try {
         let formData = new FormData();
         // Append form fields
-        formData.append('full_name', this.form.full_name);
-        formData.append('date_of_birth', this.form.date_of_birth);
-        formData.append('gender', this.form.gender);
-        formData.append('disability_type', this.form.disability_type ? this.selectedDisability.id : "");
-        formData.append('address', this.form.address);
-        formData.append('contact_number', this.form.contact_number);
-        formData.append('emergency_contact_name', this.form.emergency_contact_name);
-        formData.append('emergency_phone', this.form.emergency_phone);
-        formData.append('is_verified', this.form.is_verified);
+        formData.append('full_name', this.form.full_name || "");
+        formData.append('date_of_birth', this.form.date_of_birth || "");
+        formData.append('gender', this.form.gender || "");
+        formData.append('disability_type', this.form.disability_type || "");
+        formData.append('occupation', this.form.occupation || "");
+        formData.append('community', this.form.community || "");
+        formData.append('area_council', this.form.area_council || "");
+        formData.append('address', this.form.address || "");
+        formData.append('contact_number', this.form.contact_number || "");
+        formData.append('emergency_contact_name', this.form.emergency_contact_name || "");
+        formData.append('emergency_phone', this.form.emergency_phone || "");
+        formData.append('is_verified', this.form.is_verified || "");
         // formData.append('user', this.$store.state.user.id);
 
         // Append the image file if selected
         if (this.form.id_photo instanceof File) {
           formData.append('id_photo', this.form.id_photo);
-        }
-
-        if (!this.selectedDisability) {
-          toast.warn('Please select a disability type from suggestion')
-          return
         }
 
         const response = await instance.put(`/pwd_records/${this.form.id}/`, formData, {
@@ -588,6 +633,16 @@ export default {
     } catch (error) {
       toast.error('Failed to export PDF');
     }
+  },
+  formatDate(dateStr){
+    const d = new Date(dateStr)
+    return d.toLocaleString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
   },
 },
 }

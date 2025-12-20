@@ -35,6 +35,9 @@
               <p class="lead fw-bold"><em>Gender:</em> {{ record.gender }}</p>
               <p class="lead fw-bold"><em>Disability Type:</em> {{ record.disability_name }}</p>
               <p class="lead fw-bold"><em>Address:</em> {{ record.address }}</p>
+              <p class="lead fw-bold"><em>Occupation:</em> {{ record.occupation }}</p>
+              <p class="lead fw-bold"><em>Community:</em> {{ record.community }}</p>
+              <p class="lead fw-bold"><em>Area Council:</em> {{ record.area_council }}</p>
               <p class="lead fw-bold"><em>Contact Number:</em> {{ record.contact_number }}</p>
               <p class="lead fw-bold"><em>Emergency Contact Name:</em> {{ record.emergency_contact_name }}</p>
               <p class="lead fw-bold"><em>Emergency Phone:</em> {{ record.emergency_phone }}</p>

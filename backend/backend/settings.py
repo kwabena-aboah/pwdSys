@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'import_export',
     'django_otp',
     'django_otp.plugins.otp_totp',
     'auditlog',
@@ -257,7 +258,19 @@ LOGGING = {
             "class": "django.utils.log.AdminEmailHandler",
         }
     },
-    "loggers": {"django.request": {"handlers": ["mail_admins"], "level": "ERROR", "propagate": True}},
+    "loggers": {
+        "django.request": {"handlers": ["mail_admins"], "level": "ERROR", "propagate": True},
+        "import_export": {
+            "handlers": {
+                "mail_admins": {
+                    "level": "ERROR",
+                    "filters": ["require_debug_false"],
+                    "class": "django.utils.log.AdminEmailHandler",
+                }
+            },
+            "level": "INFO",
+        },
+    },
 }
 
 # # Celery Settings

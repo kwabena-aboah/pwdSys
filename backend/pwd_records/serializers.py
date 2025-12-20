@@ -59,7 +59,7 @@ class PWDRecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = PWDRecord
         fields = [
-            'id', 'user', 'full_name', 'date_of_birth', 'gender', 'disability_type', 'disability_name', 'id_photo',
+            'id', 'user', 'full_name', 'date_of_birth', 'gender', 'disability_type', 'disability_name', 'id_photo', "occupation", "community", "area_council",
             'address', 'contact_number', 'emergency_contact_name', 'emergency_phone', 'is_verified', 'registration_date'
         ]
         extra_kwargs = {'user': {'read_only': True}} # make user auto-assigned
@@ -183,7 +183,7 @@ class SupportServicesSerializer(serializers.ModelSerializer):
     class Meta:
         model = SupportServices
         fields = [
-            'id', 'pwd_id', 'pwd_name', 'service_type', 'service_name', 'application_status', 'approval_date', 'user'
+            'id', 'pwd_id', 'pwd_name', 'service_type', 'service_name', 'support_name', 'application_status', 'approval_date', 'user'
         ]
         extra_kwargs = {'user': {'read_only': True}} # make user auto-assigned
 

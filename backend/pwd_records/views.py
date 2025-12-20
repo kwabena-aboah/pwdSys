@@ -9,6 +9,7 @@ from django.template.loader import get_template
 from weasyprint import HTML
 from django.utils.dateparse import parse_date
 from . models import DisabilityType, ServiceType, PWDRecord, Certificate, MedicalRecords, SupportServices, Complaints, DocumentAuditLog
+from .utils.pwd_pdf import generate_pwd_pdf
 from .filters import PWDRecordFilter
 from .serializers import DisabilityTypeSerializer, ServiceTypeSerializer, PWDRecordSerializer, CertificateSerializer, MedicalRecordsSerializer, SupportServicesSerializer, ComplaintsSerializer, DocumentAuditLogSerializer
 from .permissions import IsAdminOrSocialWorkerOrMedicalOfficer, IsOwnerOrReadOnly
@@ -76,6 +77,7 @@ class PWDRecordViewSet(viewsets.ModelViewSet):
     ordering = ['registration_date']
     permission_classes = (IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer)
     parser_classes = (MultiPartParser, FormParser)
+    pagination_class = ModelPagination
 
     def get_queryset(self):
         return PWDRecord.objects.filter(user=self.request.user)
@@ -192,7 +194,7 @@ class PWDRecordExportCSV(APIView):
 
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow(['Full Name', 'Disability Type', 'Gender', 'Verified', 'Registration Date'])
+        writer.writerow(['Full Name', 'Disability Type', 'Gender', 'community', 'area_council', 'occupation', 'Verified', 'Registration Date'])
 
         for r in records:
             writer.writerow([r.full_name, r.disability_type, r.gender, r.is_verified, r.registration_date])
@@ -220,6 +222,32 @@ def export_pwd_pdf(request):
     response = HttpResponse(pdf_file, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="PWD_Records_Report.pdf"'
     return response
+
+class PWDPrintSelectedPDFView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer]
+
+    def post(self, request):
+        ids = request.data.get("ids", [])
+
+        records = PWDRecord.objects.filter(id__in=ids)
+
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = "inline; filename=pwd_selected_records.pdf"
+
+        generate_pwd_pdf(response, records)
+        return response
+
+class PrintAllPWD(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer]
+
+    def get(self, request):
+        records = PWDRecord.objects.all().order_by('registration_date')
+
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = "inline; filename=pwd_all_records.pdf"
+
+        generate_pwd_pdf(response, records)
+        return response
 
 class CertificateViewSet(viewsets.ModelViewSet):
     queryset = Certificate.objects.all()
@@ -280,7 +308,7 @@ class SupportServicesViewSet(viewsets.ModelViewSet):
     queryset = SupportServices.objects.all()
     serializer_class = SupportServicesSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['pwd_id__full_name']
+    search_fields = ['full_name', 'service_name']
     ordering = ['approval_date']
     permission_classes = (IsAuthenticated, IsAdminOrSocialWorkerOrMedicalOfficer)
 

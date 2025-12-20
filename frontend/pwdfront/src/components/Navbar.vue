@@ -55,7 +55,7 @@ export default {
             // toast.success("See you later!");
             // alert("See you later!")
             this.$router.push({ name: "LoginComponent" });
-        }
+        },
     }
 };
 </script>

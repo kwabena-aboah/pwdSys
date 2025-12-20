@@ -31,28 +31,18 @@
                             <div class="modal-body">
                                 <div class="mb-3">
                                   <label for="pwd_id" class="form-label">PWD Name</label>
-                                  <div class="autocomplete-container" @keydown.down.prevent="moveDown" @keydown.up.prevent="moveUp" @keydown.enter.prevent="selectActive">
-                                    <input
-                                      type="text"
-                                      v-model="form.pwd_id"
-                                      @input="debouncedFetchSuggestions"
-                                      placeholder="Start typing a record name..."
-                                      @focus="isFocused = true"
-                                      @blur="hideSuggestionsWithDelay"
-                                      autocomplete="off"
-                                      class="form-control"
-                                      />
-                                      <ul v-if="isFocused && suggestions.length && form.pwd_id" class="ul">
-                                        <li
-                                          v-for="(name, index) in suggestions"
-                                          :key="name.id"
-                                          :class="{ active: index === activeIndex }"
-                                          @mousedown.prevent="selectPWD(name)">
-                                            {{ name.id }}. {{ name.full_name }}
-                                          </li>
-                                      </ul>
-                                      <p v-if="selectedPWD">Selected: {{ selectedPWD.full_name }}</p>
-                                  </div>
+                                  <Multiselect
+                                    v-model="form.pwd_id"
+                                    :options="suggestions"
+                                    label="full_name"
+                                    value-prop="id"
+                                    track-by="id"
+                                    searchable
+                                    :filter-results="false"
+                                    @search-change="fetchRecords"
+                                    placeholder="Search PWD by name..."
+                                    class="form-control p-0"
+                                    />
                                 </div>
                                 <div class="mb-3">
                                     <label for="diagnosis" class="form-label">Diagnosis</label>
@@ -116,7 +106,7 @@
                             <td>{{ mrecord.diagnosis }}</td>
                             <td>{{ mrecord.doctor_name }}</td>
                             <td>{{ mrecord.hospital_name }}</td>
-                            <td>{{ mrecord.last_checkup_date }}</td>
+                            <td>{{ formatDate(mrecord.last_checkup_date) }}</td>
                             <td>
                                 <button class="btn btn-sm btn-warning me-2" @click="openModal('edit', mrecord)">Edit</button>
                                 <button class="btn btn-sm btn-danger" @click="deleteMedicalRecord(mrecord.id)">Delete</button>
@@ -159,11 +149,14 @@ import Navbar from '@/components/Navbar.vue';
 import Sidebar from "@/components/Sidebar.vue"
 import { toast } from "vue3-toastify";
 import "vue3-toastify/dist/index.css";
+import Multiselect from "@vueform/multiselect";
+import "@vueform/multiselect/themes/default.css";
 
 export default {
     components: {
         Navbar,
         Sidebar,
+        Multiselect,
     },
     name: "MedicalRecordPage",
     data() {
@@ -182,11 +175,7 @@ export default {
             suggestions: [],
             searchQuery: "",
             ordering: "last_checkup_date",
-            activeIndex: -1,
-            isFocused: false,
             loading: false,
-            selectedPWD: null,
-            debouceTimeout: null,
             modalTitle: '',
             modalAction: '',
             pagination: {
@@ -249,61 +238,25 @@ export default {
               query: { ...this.$route.query, pageParam },
             });
         },
-        async fetchRecords() {
-          if(this.form.pwd_id.length < 2) {
-            this.suggestions = []
-            this.activeIndex = -1
-            return
-           }
+        async fetchRecords(query) {
+          if (!query || query.length < 2){
+            this.suggestions = [];
+            return;
+          }
            await instance.get('/pwd_records/', {
                 headers: {
                 'Authorization': `Bearer ${this.$store.state.accessToken}`,
               },
-              params: {
-                q: this.form.pwd_id,
-              }
+              params: { search: query }
             })
            .then((response) => {
-            this.suggestions = response.data.results;
-            this.activeIndex = -1;
+            this.suggestions = response.data.results ?? response.data;
            })
            .catch((error) => {
             toast.error("Error fetching pwd record name!");
             console.error(error)
            })
         },
-        debouncedFetchSuggestions() {
-            clearTimeout(this.debouceTimeout)
-            this.debouceTimeout = setTimeout(() => {
-              this.fetchRecords()
-            }, 300)
-          },
-          selectPWD(name) {
-            this.form.pwd_id = name.pwd_id
-            this.selectedPWD = name
-            this.suggestions = []
-            this.activeIndex = -1
-          },
-          moveDown() {
-            if(this.activeIndex < this.suggestions.length - 1) {
-              this.activeIndex++
-            }
-          },
-          moveUp() {
-            if(this.activeIndex > 0) {
-              this.activeIndex--
-            }
-          },
-          selectActive() {
-            if(this.activeIndex >= 0) {
-              this.selectPWD(this.suggestions[this.activeIndex])
-            }
-          },
-          hideSuggestionsWithDelay() {
-            setTimeout(() => {
-              this.isFocused = false
-            }, 100)
-          },
         openModal(action, mrecord = null) {
             if (action === 'create') {
                 this.modalTitle = 'Add Medical Record';
@@ -328,7 +281,7 @@ export default {
             try {
                 let formData = new FormData();
                 // Append form fields
-                formData.append('pwd_id', this.form.pwd_id || this.selectedPWD.id);
+                formData.append('pwd_id', this.form.pwd_id || "");
                 formData.append('diagnosis', this.form.diagnosis || "");
                 formData.append('doctor_name', this.form.doctor_name || "");
                 formData.append('hospital_name', this.form.hospital_name || "");
@@ -357,16 +310,11 @@ export default {
             try {
                 let formData = new FormData();
                 // Append form fields
-                formData.append('pwd_id', this.form.pwd_id || this.selectedPWD.id);
+                formData.append('pwd_id', this.form.pwd_id || "");
                 formData.append('diagnosis', this.form.diagnosis || "");
                 formData.append('doctor_name', this.form.doctor_name || "");
                 formData.append('hospital_name', this.form.hospital_name || "");
                 formData.append('last_checkup_date', this.form.last_checkup_date || "");
-
-                 if (!this.selectedPWD) {
-                  toast.warn('Please select a record name from suggestions')
-                  return
-                }
 
                 const response = await instance.put(`/medical_records/${this.form.id}/`, formData, {
                     headers: {
@@ -399,6 +347,16 @@ export default {
         closeModal() {
             const modal = Modal.getInstance(document.getElementById('medicalRecordsModal'));
             modal.hide();
+        },
+        formatDate(dateStr){
+          const d = new Date(dateStr)
+          return d.toLocaleString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })
         },
     },
     created() {

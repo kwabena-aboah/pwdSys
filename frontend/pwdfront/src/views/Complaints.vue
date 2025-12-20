@@ -31,28 +31,18 @@
                             <div class="modal-body">
                                 <div class="mb-3">
                                   <label for="pwd_id" class="form-label">PWD Name</label>
-                                  <div class="autocomplete-container" @keydown.down.prevent="moveDown" @keydown.up.prevent="moveUp" @keydown.enter.prevent="selectActive">
-                                    <input
-                                      type="text"
-                                      v-model="form.pwd_id"
-                                      @input="debouncedFetchSuggestions"
-                                      placeholder="Start typing a record name..."
-                                      @focus="isFocused = true"
-                                      @blur="hideSuggestionsWithDelay"
-                                      autocomplete="off"
-                                      class="form-control"
-                                      />
-                                      <ul v-if="isFocused && suggestions.length && form.pwd_id" class="ul">
-                                        <li
-                                          v-for="(name, index) in suggestions"
-                                          :key="name.id"
-                                          :class="{ active: index === activeIndex }"
-                                          @mousedown.prevent="selectPWD(name)">
-                                            {{ name.id }}. {{ name.full_name }}
-                                          </li>
-                                      </ul>
-                                      <p v-if="selectedPWD">Selected: {{ selectedPWD.full_name }}</p>
-                                  </div>
+                                  <Multiselect
+                                    v-model="form.pwd_id"
+                                    :options="suggestions"
+                                    label="full_name"
+                                    value-prop="id"
+                                    track-by="id"
+                                    searchable
+                                    :filter-results="false"
+                                    @search-change="fetchRecords"
+                                    placeholder="Search PWD by name..."
+                                    class="form-control p-0"
+                                    />
                                 </div>
                                 <div class="mb-3">
                                     <label for="location" class="form-label">Location</label>
@@ -121,7 +111,7 @@
                             <td>{{ complaint.location}}</td>
                             <td>{{ complaint.complaint_description}}</td>
                             <td>{{ complaint.status }}</td>
-                            <td>{{ complaint.reported_at }}</td>
+                            <td>{{ formatDate(complaint.reported_at) }}</td>
                             <td>
                                 <button class="btn btn-sm btn-warning me-2" @click="openModal('edit', complaint)">Edit</button>
                                 <button class="btn btn-sm btn-danger" @click="deleteComplaint(complaint.id)">Delete</button>
@@ -164,11 +154,14 @@ import Navbar from '@/components/Navbar.vue';
 import Sidebar from "@/components/Sidebar.vue"
 import { toast } from "vue3-toastify";
 import "vue3-toastify/dist/index.css";
+import Multiselect from "@vueform/multiselect";
+import "@vueform/multiselect/themes/default.css";
 
 export default {
     components: {
         Navbar,
         Sidebar,
+        Multiselect,
     },
     name: "ComplaintPage",
     data() {
@@ -186,13 +179,9 @@ export default {
             },
             page: 1,
             suggestions: [],
-            activeIndex: -1,
             searchQuery: "",
             ordering: "reported_at",
             loading: false,
-            isFocused: false,
-            selectedPWD: null,
-            debouceTimeout: null,
             modalTitle: '',
             modalAction: '',
             pagination: {
@@ -257,61 +246,25 @@ export default {
               query: { ...this.$route.query, pageParam },
             });
         },
-        async fetchRecords() {
-          if(this.form.pwd_id.length < 2) {
-            this.suggestions = []
-            this.activeIndex = -1
-            return
-           }
+        async fetchRecords(query) {
+          if (!query || query.length < 2){
+            this.suggestions = [];
+            return;
+          }
            await instance.get('/pwd_records/', {
                 headers: {
                 'Authorization': `Bearer ${this.$store.state.accessToken}`,
               },
-              params: {
-                q: this.form.pwd_id,
-              }
+              params: { search: query }
             })
            .then((response) => {
-            this.suggestions = response.data.results;
-            this.activeIndex = -1;
+            this.suggestions = response.data.results ?? response.data;
            })
            .catch((error) => {
             toast.error("Error fetching pwd record name!");
             console.error(error)
            })
         },
-        debouncedFetchSuggestions() {
-            clearTimeout(this.debouceTimeout)
-            this.debouceTimeout = setTimeout(() => {
-              this.fetchRecords()
-            }, 300)
-          },
-          selectPWD(name) {
-            this.form.pwd_id = name.pwd_id
-            this.selectedPWD = name
-            this.suggestions = []
-            this.activeIndex = -1
-          },
-          moveDown() {
-            if(this.activeIndex < this.suggestions.length - 1) {
-              this.activeIndex++
-            }
-          },
-          moveUp() {
-            if(this.activeIndex > 0) {
-              this.activeIndex--
-            }
-          },
-          selectActive() {
-            if(this.activeIndex >= 0) {
-              this.selectPWD(this.suggestions[this.activeIndex])
-            }
-          },
-          hideSuggestionsWithDelay() {
-            setTimeout(() => {
-              this.isFocused = false
-            }, 100)
-          },
         openModal(action, complaint = null) {
             if (action === 'create') {
                 this.modalTitle = 'Add Complaint';
@@ -334,14 +287,10 @@ export default {
         },
         async createComplaint() {
             try {
-                if (!this.selectedPWD) {
-                  toast.warn('Please select a record name from suggestions')
-                  return
-                }
 
                 let formData = new FormData();
                 // Append form fields
-                formData.append('pwd_id', this.form.pwd_id || this.selectedPWD.id);
+                formData.append('pwd_id', this.form.pwd_id || "");
                 formData.append('location', this.form.location || "");
                 formData.append('complaint_description', this.form.complaint_description || "");
                 formData.append('status', this.form.status || "");
@@ -364,14 +313,10 @@ export default {
         },
         async updateComplaint() {
             try {
-                // if (!this.selectedPWD) {
-                //   toast.warn('Please select a record name from suggestions')
-                //   return
-                // }
 
                 let formData = new FormData();
                 // Append form fields
-                formData.append('pwd_id', this.form.pwd_id || this.selectedPWD.id);
+                formData.append('pwd_id', this.form.pwd_id || "");
                 formData.append('location', this.form.location || "");
                 formData.append('complaint_description', this.form.complaint_description || "");
                 formData.append('status', this.form.status || "");
@@ -409,6 +354,16 @@ export default {
             const modal = Modal.getInstance(document.getElementById('complaintsModal'));
             modal.hide();
         },
+        formatDate(dateStr){
+            const d = new Date(dateStr)
+            return d.toLocaleString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          },
     },
     created() {
         this.fetchComplaints();

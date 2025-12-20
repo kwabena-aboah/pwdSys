@@ -31,29 +31,18 @@
                             <div class="modal-body">
                                 <div class="mb-3">
                                     <label for="pwd_id" class="form-label">PWD Name</label>
-                                    <!-- <input type="text" id="pwd_id" v-model="form.pwd_id" class="form-control" required /> -->
-                                    <div class="autocomplete-container" @keydown.down.prevent="moveDown" @keydown.up.prevent="moveUp" @keydown.enter.prevent="selectActive">
-                                    <input
-                                      type="text"
-                                      v-model="form.pwd_id"
-                                      @input="debouncedFetchSuggestions"
-                                      placeholder="Start typing a record name..."
-                                      @focus="isFocused = true"
-                                      @blur="hideSuggestionsWithDelay"
-                                      autocomplete="off"
-                                      class="form-control"
-                                      />
-                                      <ul v-if="isFocused && suggestions.length && form.pwd_id" class="ul">
-                                        <li
-                                          v-for="(name, index) in suggestions"
-                                          :key="name.id"
-                                          :class="{ active: index === activeIndex }"
-                                          @mousedown.prevent="selectPWD(name)">
-                                            {{ name.id }}. {{ name.full_name }}
-                                          </li>
-                                      </ul>
-                                      <p v-if="selectedPWD">Selected: {{ selectedPWD.full_name }}</p>
-                                  </div>
+                                    <Multiselect
+                                        v-model="form.pwd_id"
+                                        :options="suggestions"
+                                        label="full_name"
+                                        value-prop="id"
+                                        track-by="id"
+                                        searchable
+                                        :filter-results="false"
+                                        @search-change="fetchRecords"
+                                        placeholder="Search PWD by name..."
+                                        class="form-control p-0"
+                                        />
                                 </div>
                                 <div class="mb-3">
                                     <label for="application_status" class="form-label">Application Status</label>
@@ -66,28 +55,22 @@
                                 </div>
                                 <div class="mb-3">
                                   <label for="service_type" class="form-label">Service Type</label>
-                                  <div class="autocomplete-container" @keydown.down.prevent="moveDow" @keydown.up.prevent="mooveUp" @keydown.enter.prevent="chooseActive">
-                                    <input
-                                      type="text"
-                                      v-model="form.service_type"
-                                      @input="debouncedSuggestions"
-                                      placeholder="Start typing a service type..."
-                                      @focus="isFocused = true"
-                                      @blur="hideServiceSuggestionsWithDelay"
-                                      autocomplete="off"
-                                      class="form-control"
-                                      />
-                                      <ul v-if="isFocused && searchQuery.length && form.service_type" class="ul">
-                                        <li
-                                          v-for="(stype, index) in searchQuery"
-                                          :key="stype.id"
-                                          :class="{ active: index === activeIndex }"
-                                          @mousedown.prevent="selectService(stype)">
-                                            {{ stype.id }}. {{ stype.service_name }}
-                                          </li>
-                                      </ul>
-                                      <p v-if="selectedService">Selected: {{ selectedService.service_name }}</p>
-                                  </div>
+                                  <Multiselect
+                                    v-model="form.service_type"
+                                    :options="searchQuery"
+                                    label="service_name"
+                                    value-prop="id"
+                                    track-by="id"
+                                    searchable
+                                    :filter-results="false"
+                                    @search-change="fetchServiceBenefit"
+                                    placeholder="Search service type..."
+                                    class="form-control p-0"
+                                    />
+                                </div>
+                                <div class="mb-3">
+                                  <label for="support_name" class="form-label">Support Name</label>
+                                  <input type="text" name="support_name" id="support_name" v-model="form.support_name" class="form-control">
                                 </div>
                                 <div class="mb-3">
                                     <label for="approval_date" class="form-label">Approval Date</label>
@@ -126,6 +109,7 @@
                           <th>ID</th>
                           <th>PWD Name</th>
                           <th>Service Type</th>
+                          <th>Support Name</th>
                           <th>Application Status</th>
                           <th>Approval Date</th>
                           <th>Actions</th>
@@ -136,11 +120,16 @@
                           <td>{{ bensup.id }}</td>
                           <td>{{ bensup.pwd_name }}</td>
                           <td>{{ bensup.service_name }}</td>
+                          <td>{{ bensup.support_name }}</td>
                           <td>{{ bensup.application_status }}</td>
-                          <td>{{ bensup.approval_date }}</td>
+                          <td>{{ formatDate(bensup.approval_date) }}</td>
                           <td>
-                              <button class="btn btn-sm btn-warning me-2" @click="openModal('edit', bensup)">Edit</button>
-                              <button class="btn btn-sm btn-danger" @click="deleteBeneficiarySupport(bensup.id)">Delete</button>
+                              <button class="btn btn-sm btn-warning me-2" @click="openModal('edit', bensup)">
+                                <i class="bi bi-pencil"></i>
+                              </button>
+                              <button class="btn btn-sm btn-danger" @click="deleteBeneficiarySupport(bensup.id)">
+                                <i class="bi bi-trash"></i>
+                              </button>
                           </td>
                       </tr>
                   </tbody>
@@ -180,11 +169,14 @@ import Navbar from "@/components/Navbar.vue"
 import Sidebar from "@/components/Sidebar.vue"
 import { toast } from "vue3-toastify";
 import "vue3-toastify/dist/index.css";
+import Multiselect from "@vueform/multiselect";
+import "@vueform/multiselect/themes/default.css";
 
 export default {
     components: {
         Navbar,
         Sidebar,
+        Multiselect,
     },
     name: 'BenefitSupport',
     data() {
@@ -194,18 +186,15 @@ export default {
                 id: null,
                 pwd_id: "",
                 service_type: "",
+                support_name: "",
                 application_status: "",
                 approval_date: "",
             },
             suggestions: [],
             searchQuery: [],
-            activeIndex: -1,
-            isFocused: false,
             searchQ: "",
             ordering: "approval_date",
             loading: false,
-            selectedDisability: null,
-            debouceTimeout: null,
             page: 1,
             modalTitle: '',
             modalAction: '',
@@ -275,7 +264,7 @@ export default {
           if (action === 'create') {
               this.modalTitle = 'Add Beneficiary Support';
               this.modalAction = 'Create';
-              this.form = { id: null, pwd_id: "", service_type: "", application_status: "", approval_date: "",};
+              this.form = { id: null, pwd_id: "", service_type: "", support_name: "", application_status: "", approval_date: "",};
           } else if (action === 'edit') {
               this.modalTitle = 'Edit Beneficiary Support';
               this.modalAction = 'Update';
@@ -284,116 +273,45 @@ export default {
           const modal = new Modal(document.getElementById('beneficiarySupportModal'));
           modal.show();
         },
-        async fetchRecords() {
-          if(this.form.pwd_id.length < 2) {
-            this.suggestions = []
-            this.activeIndex = -1
-            return
-           }
+        async fetchRecords(query) {
+          if (!query || query.length < 2){
+            this.suggestions = [];
+            return;
+          }
            await instance.get('/pwd_records/', {
                 headers: {
                 'Authorization': `Bearer ${this.$store.state.accessToken}`,
               },
-              params: {
-                q: this.form.pwd_id,
-              }
+              params: { search: query }
             })
            .then((response) => {
-            this.suggestions = response.data.results;
-            this.activeIndex = -1;
+            this.suggestions = response.data.results ?? response.data;
            })
            .catch((error) => {
             toast.error("Error fetching pwd record name!");
             console.error(error)
            })
         },
-        debouncedFetchSuggestions() {
-            clearTimeout(this.debouceTimeout)
-            this.debouceTimeout = setTimeout(() => {
-              this.fetchRecords()
-            }, 300)
-          },
-          selectPWD(name) {
-            this.form.pwd_id = name.pwd_id
-            this.selectedPWD = name
-            this.suggestions = []
-            this.activeIndex = -1
-          },
-          moveDown() {
-            if(this.activeIndex < this.suggestions.length - 1) {
-              this.activeIndex++
-            }
-          },
-          moveUp() {
-            if(this.activeIndex > 0) {
-              this.activeIndex--
-            }
-          },
-          selectActive() {
-            if(this.activeIndex >= 0) {
-              this.selectPWD(this.suggestions[this.activeIndex])
-            }
-          },
-          hideSuggestionsWithDelay() {
-            setTimeout(() => {
-              this.isFocused = false
-            }, 100)
-          },
-        async fetchServiceBenefit() {
-           if(this.form.service_type.length < 2) {
-            this.searchQuery = []
-            this.activeIndex = -1
-            return
-           }
-       await instance.get('/service_type/', {
-            headers: {
-            'Authorization': `Bearer ${this.$store.state.accessToken}`,
-          },
-          params: {
-            q: this.form.service_type,
+        fetchServiceBenefit(query) {
+          if (!query || query.length < 2){
+            this.searchQuery = [];
+            return;
           }
-        })
-       .then((response) => {
-        this.searchQuery = response.data.results;
-        this.activeIndex = -1;
-       })
-       .catch((error) => {
-        toast.error("Error fetching service type!");
-        console.error(error)
-       })
+
+          instance.get('/service_type/', {
+              headers: {
+                'Authorization': `Bearer ${this.$store.state.accessToken}`,
+              },
+              params: { search: query },
+          })
+         .then((response) => {
+          this.searchQuery = response.data.results ?? response.data;
+         })
+         .catch((error) => {
+          toast.error("Error fetching service type!");
+          console.error(error)
+         });
       },
-      debouncedSuggestions() {
-        clearTimeout(this.debouceTimeout)
-        this.debouceTimeout = setTimeout(() => {
-          this.fetchServiceBenefit()
-        }, 200)
-      },
-      selectService(stype) {
-        this.form.service_type = stype.service_type
-        this.selectedService = stype
-        this.searchQuery = []
-        this.activeIndex = -1
-      },
-      moveDow() {
-        if(this.activeIndex < this.searchQuery.length - 1) {
-          this.activeIndex++
-        }
-      },
-      mooveUp() {
-        if(this.activeIndex > 0) {
-          this.activeIndex--
-        }
-      },
-    chooseActive() {
-        if(this.activeIndex >= 0) {
-          this.selectService(this.searchQuery[this.activeIndex])
-        }
-      },
-    hideServiceSuggestionsWithDelay () {
-        setTimeout(() => {
-              this.isFocused = false
-            }, 200)
-        },
     handleSubmit() {
             if (this.modalAction === 'Create') {
                 this.createBenefitSupport();
@@ -405,20 +323,12 @@ export default {
             try {
                 let formData = new FormData();
                 // Append form fields
-                formData.append('pwd_id', this.form.pwd_id || this.selectedPWD.id);
-                formData.append('service_type', this.form.service_type || this.selectedService.id);
+                formData.append('pwd_id', this.form.pwd_id || "");
+                formData.append('service_type', this.form.service_type);
+                formData.append('support_name', this.form.support_name || "");
                 formData.append('application_status', this.form.application_status || "");
                 formData.append('approval_date', this.form.approval_date || "");
 
-                 if (!this.selectedPWD) {
-                      toast.warn('Please select a record name from suggestions')
-                      return
-                    }
-
-                    if (!this.selectedService) {
-                        toast.warn('Please select a service type from suggestions')
-                        return
-                    }
                 const response = await instance.post("/support_services/", formData, {
                     headers: {
                     'Authorization': `Bearer ${this.$store.state.accessToken}`,
@@ -438,20 +348,11 @@ export default {
             try {
                 let formData = new FormData();
                 // Append form fields
-                formData.append('pwd_id', this.form.pwd_id || this.selectedPWD.id);
-                formData.append('service_type', this.form.service_type || this.selectedService.id);
+                formData.append('pwd_id', this.form.pwd_id || "");
+                formData.append('service_type', this.form.service_type);
+                formData.append('support_name', this.form.support_name || "");
                 formData.append('application_status', this.form.application_status || "");
                 formData.append('approval_date', this.form.approval_date || "");
-
-                 if (!this.selectedPWD) {
-                      toast.warn('Please select a record name from suggestions')
-                      return
-                    }
-
-                    if (!this.selectedService) {
-                        toast.warn('Please select a service type from suggestions')
-                        return
-                    }
 
                 const response = await instance.put(`/support_services/${this.form.id}/`, formData, {
                     headers: {
@@ -484,6 +385,16 @@ export default {
         closeModal() {
             const modal = Modal.getInstance(document.getElementById('beneficiarySupportModal'));
             modal.hide();
+        },
+        formatDate(dateStr){
+          const d = new Date(dateStr)
+          return d.toLocaleString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })
         },
     },
     created() {

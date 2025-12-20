@@ -40,7 +40,7 @@ class DisabilityType(models.Model):
 	created_on = models.DateField(auto_now_add=True)
 
 	def __str__(self):
-		return f"{self.disability_type} - {self.description}"
+		return f"{self.disability_type}"
 
 class ServiceType(models.Model):
 	service_name = models.CharField(max_length=255)
@@ -48,7 +48,7 @@ class ServiceType(models.Model):
 	created_on = models.DateField(auto_now_add=True)
 
 	def __str__(self):
-		return f"{self.service_name} - {self.description}"
+		return f"{self.service_name}"
 
 class PWDRecord(models.Model):
 	user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -57,6 +57,11 @@ class PWDRecord(models.Model):
 	gender = models.CharField(max_length=6, choices=GENDER, default='male')
 	disability_type = models.ForeignKey(DisabilityType, on_delete=models.CASCADE)
 	id_photo = models.ImageField(upload_to=upload_image_path, null=True, blank=True)
+	# add new fields
+	occupation = models.CharField(max_length=255, blank=True, null=True)
+	community = models.CharField(max_length=255, blank=True, null=True)
+	area_council = models.CharField(max_length=255, blank=True, null=True)
+	
 	address = models.TextField(blank=True, null=True)
 	contact_number = models.CharField(max_length=15, blank=True, null=True)
 	emergency_contact_name = models.CharField(max_length=255, blank=True, null=True)
@@ -88,6 +93,7 @@ class MedicalRecords(models.Model):
 class SupportServices(models.Model):
 	pwd_id = models.ForeignKey(PWDRecord, on_delete=models.CASCADE)
 	service_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE)
+	support_name = models.CharField(max_length=255, blank=True, null=True)
 	application_status = models.CharField(max_length=8, choices=APPLICATION_STATUS, default='pending')
 	applied_date = models.DateField(auto_now_add=True)
 	approval_date = models.DateField(auto_now=False)
