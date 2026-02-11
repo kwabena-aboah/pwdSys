@@ -6,6 +6,8 @@ import instance from './api/axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.min.js';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+// import { BootstrapVueNext } from 'bootstrap-vue-next';
+import 'bootstrap-vue-next/dist/bootstrap-vue-next.css';
 import 'bootstrap';
 import Vue3Toastify from "vue3-toastify";
 import "vue3-toastify/dist/index.css";
@@ -39,5 +41,9 @@ function scheduleTokenRefresh() {
 }
 
 scheduleTokenRefresh();
+
+// if ('serviceWorker' in navigator) {
+//     navigator.serviceWorker.register('/service-worker.js')
+// }
 
 createApp(App).use(router).use(store, Vue3Toastify).component('SearchPage', SearchPage).mount('#app')

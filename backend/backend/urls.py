@@ -23,6 +23,7 @@ from django.views.static import serve
 from rest_framework.routers import DefaultRouter
 from users.views import UserViewset, verify_mfa
 from pwd_records.views import export_pwd_pdf, DisabilityTypeViewSet, ServiceTypeViewSet, PWDRecordViewSet, PWDSearchView, PWDReportView, PWDByDisabilityView, PWDRecordExportCSV, PWDPrintSelectedPDFView, PrintAllPWD, VerifiedPWDCountView, CertificateViewSet, MedicalRecordsViewSet, SupportServicesViewSet, ComplaintsViewSet, DocumentVerificationView, UploadAndVerifyDocumentView
+from pwd_records.sync_views import SyncPWD
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 router = DefaultRouter()
@@ -50,6 +51,7 @@ urlpatterns = [
     path('api/pwd/export/pdf/', export_pwd_pdf, name='export_pwd_pdf'),
     path('api/pwd/print-selected/', PWDPrintSelectedPDFView.as_view(), name='print-selected'),
     path('api/pwd/print-all/', PrintAllPWD.as_view(), name="print-all"),
+    path('api/sync/', SyncPWD.as_view(), name='sync-pwd'),
     path('api/verify-mfa/', verify_mfa, name='verify-mfa'),
     re_path(r'^media/(?P<path>.*)$', serve,
         {'document_root': settings.MEDIA_ROOT}),

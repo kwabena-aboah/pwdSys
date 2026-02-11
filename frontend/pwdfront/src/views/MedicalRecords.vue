@@ -122,7 +122,15 @@
             </div>
 
               <!-- Pagination controls -->
-               <nav aria-label="Page navigation">
+              <b-pagination
+                v-if="pagination.count > 0"
+                v-model="page"
+                :total-rows="pagination.count"
+                :per-page="pagination.perPage"
+                align="center"
+                @update:model-value="changePage" 
+              />
+               <!-- <nav aria-label="Page navigation">
                 <ul class="pagination justify-content-center">
                     <li 
                         class="page-item"
@@ -137,7 +145,7 @@
                         <a href="#" class="page-link" @click.prevent="changePage(pagination.next)">Next</a>
                     </li>
                 </ul>
-               </nav>
+               </nav> -->
         </main>
     </div>
 </template>
@@ -145,6 +153,7 @@
 <script>
 import instance from '@/api/axios';
 import { Modal } from "bootstrap";
+import { BPagination } from 'bootstrap-vue-next';
 import Navbar from '@/components/Navbar.vue';
 import Sidebar from "@/components/Sidebar.vue"
 import { toast } from "vue3-toastify";
@@ -157,6 +166,7 @@ export default {
         Navbar,
         Sidebar,
         Multiselect,
+        BPagination
     },
     name: "MedicalRecordPage",
     data() {
@@ -178,10 +188,10 @@ export default {
             loading: false,
             modalTitle: '',
             modalAction: '',
-            pagination: {
-                next: null,
-                prev: null,
-            },
+           pagination: {
+              count: 0,
+              perPage: 10,
+          },
         };
     },
     watch: {

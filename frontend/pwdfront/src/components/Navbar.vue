@@ -15,6 +15,7 @@
         
         <div class="navbar-nav">
             <div class="navbar-item text-nowrap">
+                <div :class="['badge', online ? 'bg-success' : 'bg-danger']"> {{ online ? 'Online' : 'Offline' }}</div>
                 <button type="button" class="btn btn-text btn-sm" data-bs-toggle="modal" data-bs-target="#searchModal">
                         Global Search
                 </button>
@@ -49,6 +50,13 @@ import SearchPage from '@/components/Search.vue';
 export default {
     components: SearchPage,
     name: "NavBar",
+    data(){
+      return { online: navigator.online }
+    },
+    mounted() {
+      window.addEventListener('online', () => this.online = true)
+      window.addEventListener('offline', () => this.online = false)
+    },
     methods: {
         ...mapActions(["logout"]),
         logout() {

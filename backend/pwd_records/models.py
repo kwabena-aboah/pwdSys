@@ -68,6 +68,7 @@ class PWDRecord(models.Model):
 	emergency_phone = models.CharField(max_length=15, blank=True, null=True)
 	is_verified = models.BooleanField(default=True)
 	registration_date = models.DateTimeField(auto_now_add=True)
+	external_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
 
 	def __str__(self):
 		return f"{self.full_name} - {self.user.role}"

@@ -216,22 +216,31 @@
              </div>
 
               <!-- Pagination controls -->
-               <nav aria-label="Page navigation" v-if="pagination.prev || pagination.next">
+              <b-pagination
+                v-if="pagination.count > 0"
+                v-model="currentPage"
+                :total-rows="pagination.count"
+                :per-page="pagination.perPage"
+                align="center"
+                @update:model-value="changePage" 
+              />
+              
+               <!-- <nav aria-label="Page navigation" v-if="records.length">
                 <ul class="pagination justify-content-center">
                     <li 
                         class="page-item"
                         :class="{ disabled: !pagination.prev }"
                         >
-                        <a href="#" class="page-link" @click.prevent="() => changePage(pagination.prev)">Previous</a>
+                        <a href="#" class="page-link" @click.prevent="changePage(currentPage - 1)">Previous</a>
                     </li>
                     <li 
                         class="page-item"
                         :class="{ disabled: !pagination.next }"
                         >
-                        <a href="#" class="page-link" @click.prevent="() => changePage(pagination.next)">Next</a>
+                        <a href="#" class="page-link" @click.prevent="changePage(currentPage + 1)">Next</a>
                     </li>
                 </ul>
-               </nav>
+               </nav> -->
 
             </div>
 
@@ -242,6 +251,7 @@
 <script>
 import instance from '@/api/axios';
 import { Modal } from "bootstrap";
+import { BPagination } from 'bootstrap-vue-next';
 import Navbar from "@/components/Navbar.vue"
 import Sidebar from "@/components/Sidebar.vue"
 import { toast } from "vue3-toastify";
@@ -254,6 +264,7 @@ export default {
         Navbar,
         Sidebar,
         Multiselect,
+        BPagination,
     },
     name: 'PWDRecordList',
   data() {
@@ -287,17 +298,15 @@ export default {
       modalTitle: '',
       modalAction: '',
       pagination: {
-          next: null,
-          prev: null,
+          count: 0,
+          perPage: 10,
       },
     };
   },
-  created() {
-    this.loadFromQuery();
-  },
   watch: {
-    '$route.query': {
-      handler() {
+    '$route.query.page': {
+      handler(page) {
+        console.log('Route changed to page:', page);
         this.loadFromQuery();
       },
       deep: true,
@@ -312,12 +321,12 @@ export default {
       this.ordering = query.ordering || 'registration_date';
       this.filters.is_verified = query.is_verified ?? '';
 
-      const currentPage = parseInt(query.page) || 1;
-      this.currentPage = currentPage;
+      const currentPage = Number(query.page);
+      this.currentPage = Number.isNaN(currentPage) || currentPage < 1 ? 1 : currentPage;
 
-      this.fetchRecords(currentPage);
+      this.fetchRecords(this.currentPage);
 
-      console.log("Route changed to page:", this.$route.query.page);
+      // console.log("Route changed to page:", this.$route.query.page);
     },
     updateRouteQuery() {
       this.$router.push({
@@ -326,7 +335,6 @@ export default {
           search: this.searchQuery || undefined,
           ordering: this.ordering || undefined,
           is_verified: this.filters.is_verified !== '' ? this.filters.is_verified : undefined,
-          page: 1,
         },
       });
     },
@@ -334,7 +342,15 @@ export default {
       try {
         this.loading = true;
 
-        let url = `/pwd_records/?search=${this.searchQuery}&page=${page}&ordering=${this.ordering}`;
+        let url = `/pwd_records/?page=${page}`;
+
+        if(this.searchQuery){
+          url += `&search=${this.searchQuery}`;
+        }
+
+        if(this.ordering){
+          url += `&ordering=${this.ordering}`
+        }
 
         if (this.filters.is_verified !== ''){
           url += `&is_verified=${this.filters.is_verified}`;
@@ -346,9 +362,9 @@ export default {
           }
         });
         this.records = response.data.results;
-        this.pagination.next = response.data.next;
-        this.pagination.prev = response.data.previous;
-        console.log(response.data);
+        this.pagination.count = response.data.count ?? 0;
+        // this.pagination.prev = response.data.previous;
+        // console.log(response.data);
       } catch (error) {
         const status = error.response?.status;
         const message = error.response?.data || error.message;
@@ -360,13 +376,14 @@ export default {
         this.loading = false;
       }
     },
-    changePage(url) {
-        if (!url) return;
-        const pageParam = new URL(url, window.location.origin).searchParams.get('page');
-        if (pageParam  === this.$route.query.page) return;
+    changePage(page) {
+        if(page === Number(this.$route.query.page)) return;
+        // if (!url) return;
+        // const pageParam = new URL(url, window.location.origin).searchParams.get('page');
+        // if (pageParam  === this.$route.query.page) return;
         this.$router.push({
           path: this.$route.path,
-          query: { ...this.$route.query, page: pageParam },
+          query: { ...this.$route.query, page, },
         });
     },
     toggleAll(event) {

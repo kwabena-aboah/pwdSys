@@ -14,7 +14,7 @@ from .filters import PWDRecordFilter
 from .serializers import DisabilityTypeSerializer, ServiceTypeSerializer, PWDRecordSerializer, CertificateSerializer, MedicalRecordsSerializer, SupportServicesSerializer, ComplaintsSerializer, DocumentAuditLogSerializer
 from .permissions import IsAdminOrSocialWorkerOrMedicalOfficer, IsOwnerOrReadOnly
 from rest_framework import viewsets, generics, permissions, mixins, filters
-from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
 from rest_framework.generics import ListAPIView
 from django_filters.rest_framework import DjangoFilterBackend
 from .ai_verifier import fake_ai_verify
@@ -27,13 +27,13 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import BasePermission, AllowAny, IsAuthenticated, IsAdminUser, SAFE_METHODS
 import os
 
-class ModelPagination(LimitOffsetPagination):
+class ModelPagination(PageNumberPagination):
     page_size = 10 # Default page size
     page_size_query_param = 'page_size'
     max_page_size = 100
 
 class DisabilityTypeViewSet(viewsets.ModelViewSet):
-    queryset = DisabilityType.objects.all()
+    queryset = DisabilityType.objects.all().order_by("-id")
     serializer_class = DisabilityTypeSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['disability_type']
@@ -51,7 +51,7 @@ class DisabilityTypeViewSet(viewsets.ModelViewSet):
 
 
 class ServiceTypeViewSet(viewsets.ModelViewSet):
-    queryset = ServiceType.objects.all()
+    queryset = ServiceType.objects.all().order_by("-id")
     serializer_class = ServiceTypeSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['service_name']
@@ -68,7 +68,7 @@ class ServiceTypeViewSet(viewsets.ModelViewSet):
         return paginator.get_paginated_response(serializer.data)
 
 class PWDRecordViewSet(viewsets.ModelViewSet):
-    queryset = PWDRecord.objects.all()
+    queryset = PWDRecord.objects.all().order_by("-id")
     serializer_class = PWDRecordSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = PWDRecordFilter
@@ -197,7 +197,7 @@ class PWDRecordExportCSV(APIView):
         writer.writerow(['Full Name', 'Disability Type', 'Gender', 'community', 'area_council', 'occupation', 'Verified', 'Registration Date'])
 
         for r in records:
-            writer.writerow([r.full_name, r.disability_type, r.gender, r.is_verified, r.registration_date])
+            writer.writerow([r.full_name, r.disability_type, r.gender, r.community, r.area_council, r.occupation, r.is_verified, r.registration_date])
 
         response = HttpResponse(output.getvalue(), content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="pwd_records.csv"'
@@ -250,7 +250,7 @@ class PrintAllPWD(APIView):
         return response
 
 class CertificateViewSet(viewsets.ModelViewSet):
-    queryset = Certificate.objects.all()
+    queryset = Certificate.objects.all().order_by("-id")
     serializer_class = CertificateSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['pwd_id__full_name']
@@ -284,7 +284,7 @@ class CertificateViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 class MedicalRecordsViewSet(viewsets.ModelViewSet):
-    queryset = MedicalRecords.objects.all()
+    queryset = MedicalRecords.objects.all().order_by("-id")
     serializer_class = MedicalRecordsSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['pwd_id__full_name']
@@ -305,7 +305,7 @@ class MedicalRecordsViewSet(viewsets.ModelViewSet):
         return paginator.get_paginated_response(serializer.data)
 
 class SupportServicesViewSet(viewsets.ModelViewSet):
-    queryset = SupportServices.objects.all()
+    queryset = SupportServices.objects.all().order_by("-id")
     serializer_class = SupportServicesSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['full_name', 'service_name']
@@ -325,7 +325,7 @@ class SupportServicesViewSet(viewsets.ModelViewSet):
         return paginator.get_paginated_response(serializer.data)
 
 class ComplaintsViewSet(viewsets.ModelViewSet):
-    queryset = Complaints.objects.all()
+    queryset = Complaints.objects.all().order_by("-id")
     serializer_class = ComplaintsSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['pwd_id__full_name']

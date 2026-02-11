@@ -47,6 +47,9 @@
 				<th>Full Name</th>
 				<th>Disability Type</th>
 				<th>Gender</th>
+				<th>Community</th>
+				<th>Area Council</th>
+				<th>Occupation</th>
 				<th>Verified</th>
 				<th>Registration Date</th>
 			</tr>
@@ -58,6 +61,9 @@
 				<td>{{ record.full_name }}</td>
 				<td>{{ record.disability_type }}</td>
 				<td>{{ record.gender }}</td>
+				<td>{{ record.community }}</td>
+				<td>{{ record.area_council }}</td>
+				<td>{{ record.occupation }}</td>
 				<td>{{ record.is_verified|yesno:"Yes,No" }}</td>
 				<td>{{ record.registration_date|date:"Y-m-d" }}</td>
 			</tr>
