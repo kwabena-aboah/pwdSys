@@ -14,7 +14,7 @@ from .filters import PWDRecordFilter
 from .serializers import DisabilityTypeSerializer, ServiceTypeSerializer, PWDRecordSerializer, CertificateSerializer, MedicalRecordsSerializer, SupportServicesSerializer, ComplaintsSerializer, DocumentAuditLogSerializer
 from .permissions import IsAdminOrSocialWorkerOrMedicalOfficer, IsOwnerOrReadOnly
 from rest_framework import viewsets, generics, permissions, mixins, filters
-from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
+from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination 
 from rest_framework.generics import ListAPIView
 from django_filters.rest_framework import DjangoFilterBackend
 from .ai_verifier import fake_ai_verify

@@ -40,4 +40,15 @@ body {
     padding: 0;
     color: #212529;
 }
+
+.ms-dropdown {
+  z-index: 9999 !important;
+}
+
+.ms-options {
+  z-index: 9999 !important;
+}
+/*.modal {
+  overflow: visible !important;
+}*/
 </style>

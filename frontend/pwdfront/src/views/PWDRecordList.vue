@@ -40,19 +40,18 @@
                                 </div>
                                 <div class="mb-3">
                                     <label for="gender" class="form-label">Gender</label>
-                                    <select name="gender" id="gender" v-model="form.gender" class="form-select" required>
+                                    <select name="gender" id="gender" v-model="form.gender" class="form-select p-0" required>
                                         <option value="" disabled>Select gender</option>
                                         <option value="male">Male</option>
-                                        <option value="female">Female</option>
-                                        <!-- <option value="other">Other</option> -->
+                                        <option value="female">Female</option> 
                                     </select>
                                 </div>
                                 <div class="mb-3">
                                   <label for="disability_type" class="form-label">Disability Type</label>
-                                  <Multiselect
+                                    <Multiselect
                                     v-model="form.disability_type"
                                     :options="suggestions"
-                                    label="disability_name"
+                                    label="disability_type"
                                     value-prop="id"
                                     track-by="id"
                                     searchable
@@ -224,23 +223,6 @@
                 align="center"
                 @update:model-value="changePage" 
               />
-              
-               <!-- <nav aria-label="Page navigation" v-if="records.length">
-                <ul class="pagination justify-content-center">
-                    <li 
-                        class="page-item"
-                        :class="{ disabled: !pagination.prev }"
-                        >
-                        <a href="#" class="page-link" @click.prevent="changePage(currentPage - 1)">Previous</a>
-                    </li>
-                    <li 
-                        class="page-item"
-                        :class="{ disabled: !pagination.next }"
-                        >
-                        <a href="#" class="page-link" @click.prevent="changePage(currentPage + 1)">Next</a>
-                    </li>
-                </ul>
-               </nav> -->
 
             </div>
 
@@ -254,6 +236,7 @@ import { Modal } from "bootstrap";
 import { BPagination } from 'bootstrap-vue-next';
 import Navbar from "@/components/Navbar.vue"
 import Sidebar from "@/components/Sidebar.vue"
+// import DisabilitySelect from "@/components/DisabilitySelect.vue"
 import { toast } from "vue3-toastify";
 import "vue3-toastify/dist/index.css";
 import Multiselect from "@vueform/multiselect";
@@ -264,6 +247,7 @@ export default {
         Navbar,
         Sidebar,
         Multiselect,
+        // DisabilitySelect,
         BPagination,
     },
     name: 'PWDRecordList',
@@ -363,8 +347,6 @@ export default {
         });
         this.records = response.data.results;
         this.pagination.count = response.data.count ?? 0;
-        // this.pagination.prev = response.data.previous;
-        // console.log(response.data);
       } catch (error) {
         const status = error.response?.status;
         const message = error.response?.data || error.message;
@@ -378,9 +360,6 @@ export default {
     },
     changePage(page) {
         if(page === Number(this.$route.query.page)) return;
-        // if (!url) return;
-        // const pageParam = new URL(url, window.location.origin).searchParams.get('page');
-        // if (pageParam  === this.$route.query.page) return;
         this.$router.push({
           path: this.$route.path,
           query: { ...this.$route.query, page, },
@@ -442,18 +421,20 @@ export default {
         }
     },
     async fetchDisabilityType(query) {
-       if(!query || query.length < 2) {
-        this.suggestions = [];
-        return;
-       }
-       await instance.get('/disability_type/', {
+      if (!query || query.length < 2){
+            this.suggestions = [];
+            return;
+          }
+
+      await instance.get('/disability_type/', {
             headers: {
             'Authorization': `Bearer ${this.$store.state.accessToken}`,
           },
           params: { search: query },
         })
        .then((response) => {
-        this.suggestions = response.data.results ?? response.data;
+        this.suggestions = response.data.results || response.data;
+        // console.log(this.suggestions)
        })
        .catch((error) => {
         toast.error("Error fetching disability type!");
@@ -613,7 +594,6 @@ export default {
       },
       responseType: 'blob'
     })
-    // .then(res => res.blob())
     .then(res => {
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(new Blob([res.data]));
@@ -661,14 +641,13 @@ export default {
       minute: '2-digit'
     })
   },
+  created() {
+    this.fetchRecords();
+  },
 },
 }
 </script>
 <style scoped>
-  /*.autocomplete-container {
-    position: relative;
-    width: 100px;
-  }*/
   .ul {
     list-style: none;
     margin: 0;
